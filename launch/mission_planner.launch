@@ -2,8 +2,11 @@
     <node name="SMORES_Mission_Planner" pkg="smores_ros" type="mission_planner_node.py" output="screen">
         <param name="nbv_service_name" value="nbv_relay" />
         <param name="dock_point_service_name" value="get_target" />
-        <param name="pink_obj_topic_name" value="blob_pt" />
-        <param name="blue_obj_topic_name" value="blob_pt" />
+        <param name="pink_obj_topic_name" value="blobPt" />
+        <param name="blue_obj_topic_name" value="bluePt" />
+        <param name="navigation_action_name" value="move_base" />
+        <param name="reconf_signal_topic_name" value="reconf_signal" />
+        <param name="reconf_status_topic_name" value="reconf_status" />
     </node>
     <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">
         <param name="nbv_request_topic" value="/nbv_iter" />
