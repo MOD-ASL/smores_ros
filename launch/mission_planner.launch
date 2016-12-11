@@ -1,0 +1,12 @@
+<launch>
+    <node name="SMORES_Mission_Planner" pkg="smores_ros" type="mission_planner_node.py" output="screen">
+        <param name="nbv_service_name" value="nbv_relay" />
+        <param name="dock_point_service_name" value="get_target" />
+        <param name="pink_obj_topic_name" value="blob_pt" />
+        <param name="blue_obj_topic_name" value="blob_pt" />
+    </node>
+    <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">
+        <param name="nbv_request_topic" value="/nbv_iter" />
+        <param name="nbv_result_topic" value="/nbv_pose" />
+    </node>
+</launch>
