@@ -7,6 +7,10 @@
         <param name="navigation_action_name" value="move_base" />
         <param name="reconf_signal_topic_name" value="reconf_signal" />
         <param name="reconf_status_topic_name" value="reconf_status" />
+        <param name="set_behavior_service_name" value="set_behavior" />
+    </node>
+    <node name="SMORES_Behavior_Planner" pkg="smores_ros" type="behavior_planner_node.py" output="screen">
+        <param name="set_behavior_service_name" value="set_behavior" />
     </node>
     <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">
         <param name="nbv_request_topic" value="/nbv_iter" />

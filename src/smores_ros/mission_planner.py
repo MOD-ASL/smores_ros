@@ -2,9 +2,10 @@
 from aenum import Enum
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 from std_msgs.msg import Int32, String
-from geometry_msgs.msg import Vector3
-from smores_ros.srv import nbv_request, target_req
+from geometry_msgs.msg import Vector3, Pose
+from smores_ros.srv import nbv_request, target_req, set_behavior
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 class RobotState(Enum):
@@ -40,6 +41,7 @@ class MissionPlanner(object):
                                 "~navigation_action_name",
                                 "~reconf_signal_topic_name",
                                 "~reconf_status_topic_name",
+                                "~set_behavior_service_name",
                                 ]
         self.robot_state = RobotState.Idle
 
@@ -49,13 +51,16 @@ class MissionPlanner(object):
         self.nav_action_client = actionlib.SimpleActionClient(
                 self.param_dict["navigation_action_name"], MoveBaseAction)
         self.reconf_signal_pub = rospy.Publisher(
-                self.param_dict["reconf_signal_topic_name"], String)
+                self.param_dict["reconf_signal_topic_name"], String, queue_size=1)
 
         # Waiting for all service to be ready
+        return
         rospy.loginfo("Waiting for nbv pose service ...")
         rospy.wait_for_service(self.param_dict["nbv_service_name"])
         rospy.loginfo("Waiting for dock point service ...")
-        #rospy.wait_for_service(self.param_dict["dock_point_service_name"])
+        rospy.wait_for_service(self.param_dict["dock_point_service_name"])
+        rospy.loginfo("Waiting for set behavior service ...")
+        rospy.wait_for_service(self.param_dict["set_behavior_service_name"])
         rospy.loginfo("Waiting for navigation action service ...")
         self.nav_action_client.wait_for_server()
 
@@ -98,6 +103,15 @@ class MissionPlanner(object):
         except rospy.ServiceException, e:
             rospy.logerr("Service call failed: {}".format(e))
 
+    def setBehavior(self, configuration_name, behavior_name, is_action=False):
+        try:
+            set_behavior_service = rospy.ServiceProxy(
+                    self.param_dict["set_behavior_service_name"], set_behavior)
+            resp = set_behavior_service(configuration_name, behavior_name, is_action)
+            return resp.status
+        except rospy.ServiceException, e:
+            rospy.logerr("Service call failed: {}".format(e))
+
     def sendNavGoalRequest(self, goal_pose):
         goal = MoveBaseGoal()
         goal.target_pose.pose = goal_pose
@@ -120,22 +134,33 @@ class MissionPlanner(object):
     def main(self):
         while not rospy.is_shutdown():
 
-            rospy.sleep(3)
 
-            if self.isPinkObjDetected():
+            rospy.sleep(3)
+            print self.setBehavior("a","b",True)
+            if self.robot_state == RobotState.DriveToPinkDock:
+                # Driving to the pink object
+                if self.nav_action_client.get_state() == actionlib.SimpleClientGoalState.SUCCEEDED
+                    # Arrived at docking point
+                    # Do reconfiguration
+                    self.setRobotState(RobotState.Reconfiguration)
+                    self.sendReconfSignal("T2P")
+
+            if self.robot_state == RobotState.Reconfiguration:
+                if self.isReconfFinished():
+                    # Finished reconfiguration
+                    # Do pickup action
+                    pass
+
+            if (self.robot_state == RobotState.Explore) and self.isPinkObjDetected():
                 rospy.loginfo("Pink object detected.")
                 # Do dock
                 self.setRobotState(RobotState.DriveToPinkDock)
                 rospy.loginfo("Getting docking pose.")
                 dock_pose, recon_type = self.getDockPose()
                 self.sendNavGoalRequest(dock_pose)
-            else:
+
+            if self.robot_state == RobotState.Idle:
                 # Do explore
                 self.setRobotState(RobotState.Explore)
                 nbv_pose = self.getNBVPose()
                 self.sendNavGoalRequest(nbv_pose)
-
-            while not rospy.is_shutdown():
-                print self.nav_action_client.get_state()
-                rospy.sleep(1)
-
