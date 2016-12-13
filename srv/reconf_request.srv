@@ -1,0 +1,5 @@
+string configuration_name
+string behavior_name
+bool is_action
+---
+bool status

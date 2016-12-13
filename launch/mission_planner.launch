@@ -8,12 +8,16 @@
         <param name="reconf_signal_topic_name" value="reconf_signal" />
         <param name="reconf_status_topic_name" value="reconf_status" />
         <param name="set_behavior_service_name" value="set_behavior" />
+        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
     </node>
     <node name="SMORES_Behavior_Planner" pkg="smores_ros" type="behavior_planner_node.py" output="screen">
         <param name="set_behavior_service_name" value="set_behavior" />
+        <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/" />
+        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
     </node>
     <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">
         <param name="nbv_request_topic" value="/nbv_iter" />
         <param name="nbv_result_topic" value="/nbv_pose" />
+        <param name="timeout_period" value="600" />
     </node>
 </launch>

@@ -25,6 +25,7 @@ class NBV_Relay(object):
         rospy.init_node("nbv_relay_node", anonymous=True, log_level=rospy.DEBUG)
         self.param_name_list = ["~nbv_request_topic",
                                 "~nbv_result_topic",
+                                "~timeout_period",
                                 ]
         self._getROSParam()
 
@@ -47,7 +48,7 @@ class NBV_Relay(object):
         self.nbv_request_pub.publish(0)
 
         t = time.time()
-        while (self.nbv_result is None and (time.time()-t<10.0)):
+        while (self.nbv_result is None and (time.time()-t<float(self.param_dict["~timeout_period"]))):
             time.sleep(0.1)
 
         if self.nbv_result is None:

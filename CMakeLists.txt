@@ -59,6 +59,7 @@ catkin_python_setup()
    nbv_request.srv
    target_req.srv
    set_behavior.srv
+   reconf_request.srv
  )
 
 ## Generate actions in the 'action' folder

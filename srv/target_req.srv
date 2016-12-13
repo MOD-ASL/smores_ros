@@ -1,4 +1,4 @@
-int64 request #0: get docking point for reconf
+geometry_msgs/Pose request #0: get docking point for reconf
 ---
 geometry_msgs/Pose nav_point
 int64 recon_type
