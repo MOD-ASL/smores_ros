@@ -17,8 +17,11 @@ class RobotState(Enum):
     Explore = 1
     DriveToPinkDock = 2
     VisualServo = 3
-    Reconfiguration = 4
-    FetchPink = 5
+    ReconfigurationT2P = 4
+    ReconfigurationP2T = 5
+    FetchPink = 6
+    FindBlue = 7
+    DropPink = 8
 
 GoalStatus.to_string = classmethod(get_name_of_constant)
 
@@ -31,6 +34,8 @@ class MissionPlanner(object):
         self.cmd_vel_pub = None
         self.robot_state = None
         self.tf = None
+
+        self._pink_dock_time = None
 
         self._initialize()
         self.main()
@@ -83,13 +88,24 @@ class MissionPlanner(object):
 
     def isColorObjDetected(self, color):
         try:
-            pink_obj = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
+            color_obj = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
                                               Vector3, timeout=1.0)
             pose = self.getColorObjPose(color)
             if pose is None:
                 return False
-            return True
-        except rospy.ROSException:
+
+            rospy.loginfo("{} object maybe detected. Checking.".format(color))
+            #self._stopDriving()
+            rospy.sleep(5)
+            pose = self.getColorObjPose(color)
+            #self._resumeDriving()
+            if pose is None:
+                rospy.loginfo("False alarm.")
+                return False
+            else:
+                rospy.loginfo("{} object definitely detected.".format(color))
+                return True
+        except (rospy.ROSException, AttributeError):
             return False
 
     def getColorObjPose(self, color):
@@ -151,14 +167,24 @@ class MissionPlanner(object):
 
     def doVisualServo(self, x):
         data = Twist()
-        if x < 20.:
+        if x < -5.:
             # Turn left
-            data.angular.z = 0.3
+            data.angular.z = 0.18
             self.cmd_vel_pub.publish(data)
-        elif x > 40.:
+        elif x > 5.:
             # Turn right
-            data.angular.z = -0.3
+            data.angular.z = -0.18
             self.cmd_vel_pub.publish(data)
+
+    def _stopDriving(self):
+        self.setBehavior("", "", False)
+        data = Twist()
+        data.angular.z = 0.0
+        self.cmd_vel_pub.publish(data)
+        self.cmd_vel_pub.publish(data)
+
+    def _resumeDriving(self):
+        self.setBehavior("Tank", "Tank_diff.xml", False)
 
     def main(self):
         rate = rospy.Rate(5)
@@ -166,7 +192,21 @@ class MissionPlanner(object):
         while not rospy.is_shutdown():
             rate.sleep()
             if self.robot_state == RobotState.DriveToPinkDock:
+                if self._pink_dock_time is None:
+                    self._pink_dock_time = time.time()
+                if time.time() - self._pink_dock_time > 20.0:
+                    rospy.loginfo("Getting an updated docking pose.")
+                    pink_pose = self.getColorObjPose("pink")
+                    if pink_pose is None:
+                        rospy.logwarn("Cannot find pink object. Roll back to Idle.")
+                        self.setRobotState(RobotState.Idle)
+                        self._pink_dock_time = None
+                        continue
+                    dock_pose, recon_type = self.getDockPose(pink_pose)
+                    self.sendNavGoalRequest(dock_pose)
+                    self._pink_dock_time = time.time()
                 # Driving to the pink object
+
                 state = self.nav_action_client.get_state()
                 if state == GoalStatus.SUCCEEDED:
                     # Arrived at docking point
@@ -190,39 +230,56 @@ class MissionPlanner(object):
 
                 if pose is not None:
                     rospy.logdebug("Current x value is {}.".format(pose.x))
-                    if pose.x < 20. or pose.x > 40.:
+                    if pose.x < -5. or pose.x > 5.:
                         self.doVisualServo(pose.x)
                     else:
                         # Do reconfiguration
                         rospy.loginfo("Finished visual servoing.")
-                        data = Twist()
-                        data.angular.z = 0.0
-                        self.cmd_vel_pub.publish(data)
-                        self.cmd_vel_pub.publish(data)
-                        self.cmd_vel_pub.publish(data)
-                        self.setBehavior("", "", False)
-                        self.setRobotState(RobotState.Reconfiguration)
+                        self._stopDriving()
+
+                        self.setRobotState(RobotState.ReconfigurationT2P)
                         rospy.loginfo("Running pre-reconfiguration behavior.")
-                        self.setBehavior("Tank", "Tank_Reconf.xml", True)
+                        self.setBehavior("Tank", "TankReconf", True)
                         rospy.loginfo("Send reconfiguration signal.")
                         self.sendReconfSignal("T2P")
 
-            if self.robot_state == RobotState.Reconfiguration:
+            if self.robot_state == RobotState.ReconfigurationT2P:
                 if self.isReconfFinished():
                     # Finished reconfiguration
                     # Do pickup action
                     rospy.loginfo("Reconfiguration finished.")
                     self.setBehavior("newPro", "", False)
-                    self.setBehavior("newPro", "newProTunnel.xml", True)
+                    self.setRobotState(RobotState.FetchPink)
+
+            if self.robot_state == RobotState.FetchPink:
+                self.setBehavior("newPro", "ProTunnelPickup", True)
+                self.setBehavior("newPro", "ProDrop", True)
+
+                self.setRobotState(RobotState.ReconfigurationP2T)
+                rospy.loginfo("Running pre-reconfiguration behavior.")
+                self.setBehavior("newPro", "ProReconf", True)
+                rospy.loginfo("Send reconfiguration signal.")
+                self.sendReconfSignal("P2T")
+
+            if self.robot_state == RobotState.ReconfigurationP2T:
+                if self.isReconfFinished():
+                    # Finished reconfiguration
+                    # Find blue drop zone
+                    rospy.loginfo("Reconfiguration finished.")
+                    self.setBehavior("Tank", "", False)
+                    self.setRobotState(RobotState.FindBlue)
+
+            if self.robot_state == RobotState.FindBlue:
+                pass
 
             if (self.robot_state == RobotState.Explore):
                 if self.isColorObjDetected("pink"):
-                    rospy.loginfo("Pink object detected.")
                     # Do dock
                     self.setRobotState(RobotState.DriveToPinkDock)
                     rospy.loginfo("Getting docking pose.")
                     dock_pose, recon_type = self.getDockPose(self.getColorObjPose("pink"))
                     self.sendNavGoalRequest(dock_pose)
+                    self.setBehavior("Tank", "Tank_diff.xml", False)
                 else:
                     state = self.nav_action_client.get_state()
                     if state == GoalStatus.SUCCEEDED:
@@ -241,16 +298,8 @@ class MissionPlanner(object):
                         rospy.loginfo("Getting actionlib state {} when exploring.".format(GoalStatus.to_string(state)))
 
             if self.robot_state == RobotState.Idle:
-                if self.isColorObjDetected("pink"):
-                    rospy.loginfo("Pink object detected.")
-                    # Do dock
-                    self.setRobotState(RobotState.DriveToPinkDock)
-                    rospy.loginfo("Getting docking pose.")
-                    dock_pose, recon_type = self.getDockPose(self.getColorObjPose("pink"))
-                    self.sendNavGoalRequest(dock_pose)
-                else:
-                    # Do explore
-                    self.setRobotState(RobotState.Explore)
-                    nbv_pose = self.getNBVPose()
-                    self.sendNavGoalRequest(nbv_pose)
-                    self.setBehavior("Tank", "Tank_diff.xml", False)
+                # Do explore
+                self.setRobotState(RobotState.Explore)
+                nbv_pose = self.getNBVPose()
+                self.sendNavGoalRequest(nbv_pose)
+                self.setBehavior("Tank", "Tank_diff.xml", False)

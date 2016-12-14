@@ -83,37 +83,22 @@ class BehaviorPlanner(object):
                 self.robot_behavior_type = RobotBehaviorType.Action
                 rospy.loginfo("Current robot behavior type {}".format(self.robot_behavior_type))
                 rospy.loginfo("Running behavior {}".format(request.behavior_name))
-                if request.configuration_name == "Tank":
-                    para_mapping = {'para_L':0.0, 'para_R':0.0}
-                    #TODO: This is a hack
-                    temp = self.MP.disabledDof
-                    self.MP.disabledDof = []
-                    self.MP.playBehavior(self.robot_behavior_name, para_mapping)
-                    time.sleep(5)
-                    self.MP.disabledDof = temp
+                if request.behavior_name == "TankReconf":
+                    self.TankReconf()
+                if request.behavior_name == "ProReconf":
+                    self.ProReconf()
+                if request.behavior_name == "ProTunnelPickup":
+                    self.ProTunnelPickup()
+                if request.behavior_name == "ProDrop":
+                    self.ProDrop()
+                if request.behavior_name == "ProPickup":
+                    self.ProPickup()
+                if request.behavior_name == "TankDrop":
+                    self.TankDrop()
+                if request.behavior_name == "TankPickup":
+                    self.TankPickup()
 
-                if request.configuration_name == "newPro":
-                    self.MP.playBehavior("newProPostReconf.xml", {})
-                    rospy.sleep(2)
-                    rospy.loginfo("Moving forward with proboscis...")
-                    for i in xrange(10):
-                        if i == 9:
-                            self.MP.c.mods[front_r].move.command_position('tilt', 10.0/180*pi,3)
-                        self.MP.playBehavior("newProTunnel.xml", {'para_L':30,'para_R':30,'para_LB':-90,'para_RB':90 })
-
-                        rospy.sleep(3)
-                        self.MP.c.mods[front_r].mag.control('top', 'on')
-                        rospy.sleep(0.1)
-
-                    rospy.loginfo("Pickup object")
-                    rospy.sleep(2)
-
-                    rospy.loginfo("Moving backward with proboscis...")
-                    for i in xrange(10):
-                        self.MP.playBehavior("newProTunnel.xml", {'para_L':-30,'para_R':-30,'para_LB':90,'para_RB':-90 })
-                        rospy.sleep(3)
-
-                    rospy.loginfo("All done!")
+                rospy.loginfo("Finished behavior {}".format(request.behavior_name))
             else:
                 # This is a drive motion
                 self.robot_behavior_type = RobotBehaviorType.Drive
@@ -169,4 +154,92 @@ class BehaviorPlanner(object):
                         self._current_data.para_dict[
                             self.robot_behavior_name])
 
-                self.MP.playBehavior(self.robot_behavior_name, para_mapping)
+                self.MP.playBehavior(self.robot_behavior_name,
+                        para_mapping, blocking = False)
+
+    def TankReconf(self):
+        para_mapping = {'para_L':0.0, 'para_R':0.0}
+        #TODO: This is a hack
+        temp = self.MP.disabledDof
+        self.MP.disabledDof = []
+        self.MP.playBehavior("Tank_Reconf.xml", para_mapping)
+        self.MP.disabledDof = temp
+
+    def ProTunnelPickup(self):
+        self._ProTunnelStandup()
+        rospy.loginfo("Moving forward")
+        for i in xrange(15):
+            if i == 9:
+                rospy.loginfo("Pickup")
+                self._ProTunnelPickup()
+            self._ProTunnelForward()
+            rospy.sleep(2.1)
+            self.MP.c.mods[front_r].mag.control("top", "on")
+
+        rospy.loginfo("Moving back")
+        for i in xrange(15):
+            self._ProTunnelBack()
+            rospy.sleep(2.1)
+
+    def ProDrop(self):
+        self.MP.c.mods[front_r].move.command_position("tilt", 0.0/180*pi,3)
+        rospy.sleep(3)
+        rospy.loginfo("Drop")
+        self.MP.c.mods[front_r].mag.control("top", "off")
+        rospy.loginfo("Moving back")
+        for i in xrange(3):
+            self._ProTunnelBack()
+            rospy.sleep(2.1)
+
+    def ProPickup(self):
+        pass
+
+    def TankPickup(self):
+        pass
+
+    def TankDrop(self):
+        pass
+
+    def ProReconf(self):
+        para_mapping = {}
+        self.MP.playBehavior("newProReconf.xml", para_mapping)
+
+    def _ProTunnelForward(self):
+        self.MP.c.mods[back_r].move.command_velocity("pan",-100,2)
+        self.MP.c.mods[back_l].move.command_velocity("pan",100,2)
+        self.MP.c.mods[front_l].move.command_velocity("left",30,2)
+        rospy.sleep(0.01)
+        self.MP.c.mods[front_l].move.command_velocity("right",-30,2)
+        self.MP.c.mods[front_r].move.command_velocity("left",30,2)
+        rospy.sleep(0.01)
+        self.MP.c.mods[front_r].move.command_velocity("right",-30,2)
+
+    def _ProTunnelBack(self):
+        self.MP.c.mods[back_r].move.command_velocity("pan",100,2)
+        self.MP.c.mods[back_l].move.command_velocity("pan",-100,2)
+        self.MP.c.mods[front_l].move.command_velocity("left",-40,2)
+        rospy.sleep(0.01)
+        gelf.MP.c.mods[front_l].move.command_velocity("right",40,2)
+        self.MP.c.mods[front_r].move.command_velocity("left",-40,2)
+        rospy.sleep(0.01)
+        self.MP.c.mods[front_r].move.command_velocity("right",40,2)
+
+    def _ProTunnelPickup(self):
+        self.MP.c.mods[front_r].move.command_position("tilt",10*pi/180,2)
+
+    def _ProTunnelStandup(self):
+        for i in xrange(3):
+            self.MP.c.mods[back_r].move.command_position("tilt",-45*pi/180,2)
+            self.MP.c.mods[back_l].move.command_position("tilt",-45*pi/180,2)
+            self.MP.c.mods[front].move.command_position("tilt",-20*pi/180,2)
+            self.MP.c.mods[front_l].move.command_position("tilt",20*pi/180,2)
+            self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,2)
+        rospy.sleep(2)
+
+    def _ProFlat(self):
+        self.MP.c.mods[back_r].move.command_position("tilt",0*pi/180,2)
+        self.MP.c.mods[back_l].move.command_position("tilt",0*pi/180,2)
+        self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
+        self.MP.c.mods[front_l].move.command_position("tilt",0*pi/180,2)
+        self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,2)
+        rospy.sleep(2)

@@ -24,5 +24,6 @@ behaviorFiles = {
                  'newProPostReconf.xml':'newProPostReconf.xml',
                  'newProPostReconf2.xml':'newProPostReconf2.xml',
                  'newProTunnel.xml':'newProTunnel.xml',
+                 'newProReconf.xml':'newProReconf.xml',
                  'newProTunnel2.xml':'newProTunnel2.xml',
                 }
