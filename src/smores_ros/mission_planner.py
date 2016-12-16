@@ -289,9 +289,15 @@ class MissionPlanner(object):
                             for i in xrange(10):
                                 # Turn left
                                 data = Twist()
-                                data.angular.z = -0.3
+                                data.angular.z = 1.0
                                 self.cmd_vel_pub.publish(data)
                                 rospy.sleep(1)
+                            for i in xrange(10):
+                                # Turn left
+                                data = Twist()
+                                data.angular.z = 0.0
+                                self.cmd_vel_pub.publish(data)
+                                rospy.sleep(0.1)
                             self.setBehavior("", "", True)
                             self.setRobotState(RobotState.FindBlue)
 
@@ -306,6 +312,23 @@ class MissionPlanner(object):
             if self.robot_state == RobotState.DropPink:
                 self.setBehavior("Tank", "TankDrop", True)
                 self._carry_item = False
+
+                # Rotate the robot after drop
+                self.setBehavior("Tank", "Tank_diff.xml", False)
+                for i in xrange(10):
+                    # Turn left
+                    data = Twist()
+                    data.angular.z = 1.0
+                    self.cmd_vel_pub.publish(data)
+                    rospy.sleep(1)
+                for i in xrange(10):
+                    # Turn left
+                    data = Twist()
+                    data.angular.z = 0.0
+                    self.cmd_vel_pub.publish(data)
+                    rospy.sleep(0.1)
+                self.setBehavior("", "", True)
+
                 self.setRobotState(RobotState.Done)
 
             if self.robot_state == RobotState.Done:
@@ -350,8 +373,8 @@ class MissionPlanner(object):
                     rospy.loginfo("Getting blue docking pose.")
                     dock_pose, self.reconf_type = self.getDockPose(blue_pose)
                     rospy.loginfo("Driving to blue.")
-                    self.sendNavGoalRequest(dock_pose)
-                    self.setBehavior("Tank", "Tank_diff.xml", False)
+                    self.sendnavgoalrequest(dock_pose)
+                    self.setbehavior("tank", "tank_diff.xml", false)
 
             if (self.robot_state == RobotState.DriveToBlue):
                 # Driving to the blue object
