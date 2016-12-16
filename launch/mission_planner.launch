@@ -4,6 +4,7 @@
         <param name="dock_point_service_name" value="get_target" />
         <param name="pink_obj_topic_name" value="blobPt" />
         <param name="blue_obj_topic_name" value="bluePt" />
+        <param name="green_obj_topic_name" value="greenPt" />
         <param name="navigation_action_name" value="move_base" />
         <param name="reconf_signal_topic_name" value="reconf_signal" />
         <param name="reconf_status_topic_name" value="reconf_status" />
