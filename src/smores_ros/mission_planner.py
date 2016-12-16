@@ -238,12 +238,18 @@ class MissionPlanner(object):
 
             if self.robot_state == RobotState.VisualServo or self.robot_state == RobotState.VisualServoForRepickup:
                 self.setBehavior("Tank", "Tank_diff.xml", False)
+                color = ""
                 try:
-                    pose = rospy.wait_for_message(self.param_dict["pink_obj_topic_name"],
+                    if self._carry_item:
+                        color = "blue"
+                    else:
+                        color = "pink"
+
+                    pose = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
                                                   Vector3, timeout=1.0)
                 except rospy.ROSException:
                     pose = None
-                    rospy.logwarn("Cannot find pink object when visual servoing. Random spinning.")
+                    rospy.logwarn("Cannot find {} object when visual servoing. Random spinning.".format(color))
                     # Turn left
                     data = Twist()
                     data.angular.z = -0.3
@@ -255,18 +261,31 @@ class MissionPlanner(object):
                         self.doVisualServo(pose.x)
                     else:
                         if self.robot_state == RobotState.VisualServo:
-                            # Do reconfiguration
-                            rospy.loginfo("Finished visual servoing.")
-                            self._stopDriving()
+                            if self._carry_item:
+                                # Drop item
+                                self.setRobotState(RobotState.DropPink)
+                            else:
+                                # Do reconfiguration
+                                rospy.loginfo("Finished visual servoing.")
+                                self._stopDriving()
 
-                            self.setRobotState(RobotState.ReconfigurationT2P)
-                            rospy.loginfo("Running pre-reconfiguration behavior.")
-                            self.setBehavior("Tank", "TankReconf", True)
-                            rospy.loginfo("Send reconfiguration signal.")
-                            self.sendReconfSignal("T2P")
+                                self.setRobotState(RobotState.ReconfigurationT2P)
+                                rospy.loginfo("Running pre-reconfiguration behavior.")
+                                self.setBehavior("Tank", "TankReconf", True)
+                                rospy.loginfo("Send reconfiguration signal.")
+                                self.sendReconfSignal("T2P")
                         elif self.robot_state == RobotState.VisualServoForRepickup:
                             self.setBehavior("Tank", "TankPickup", True)
                             self._carry_item = True
+                            # Rotate the robot after pickup
+                            self.setBehavior("Tank", "Tank_diff.xml", False)
+                            for i in xrange(10):
+                                # Turn left
+                                data = Twist()
+                                data.angular.z = -0.3
+                                self.cmd_vel_pub.publish(data)
+                                rospy.sleep(1)
+                            self.setBehavior("", "", True)
                             self.setRobotState(RobotState.FindBlue)
 
             if self.robot_state == RobotState.ReconfigurationT2P:
@@ -334,7 +353,7 @@ class MissionPlanner(object):
                     # Arrived at blue
                     rospy.loginfo("Arrived at blue.")
                     self.setBehavior("", "", False)
-                    self.setRobotState(RobotState.DropPink)
+                    self.setRobotState(RobotState.VisualServo)
                 elif state == GoalStatus.ACTIVE:
                     self.setBehavior("Tank", "Tank_diff.xml", False)
                 else:
