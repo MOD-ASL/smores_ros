@@ -251,7 +251,7 @@ class MissionPlanner(object):
                     if self._carry_item:
                         color = "blue"
                     else:
-                        color = "pink"
+                        color = self._current_color
 
                     pose = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
                                                   Vector3, timeout=1.0)
@@ -264,7 +264,7 @@ class MissionPlanner(object):
                     self.cmd_vel_pub.publish(data)
 
                 if pose is not None:
-                    rospy.logdebug("Current x value is {}.".format(pose.x))
+                    rospy.loginfo("Current x value is {}.".format(pose.x))
                     if pose.x < -5. or pose.x > 5.:
                         self.doVisualServo(pose.x)
                     else:
@@ -273,15 +273,19 @@ class MissionPlanner(object):
                                 # Drop item
                                 self.setRobotState(RobotState.DropPink)
                             else:
-                                # Do reconfiguration
                                 rospy.loginfo("Finished visual servoing.")
                                 self._stopDriving()
+                                if self._current_color == "pink":
+                                    # Do reconfiguration
+                                    self.setRobotState(RobotState.ReconfigurationT2P)
+                                    rospy.loginfo("Running pre-reconfiguration behavior.")
+                                    self.setBehavior("Tank", "TankReconf", True)
+                                    rospy.loginfo("Send reconfiguration signal.")
+                                    self.sendReconfSignal("T2P")
 
-                                self.setRobotState(RobotState.ReconfigurationT2P)
-                                rospy.loginfo("Running pre-reconfiguration behavior.")
-                                self.setBehavior("Tank", "TankReconf", True)
-                                rospy.loginfo("Send reconfiguration signal.")
-                                self.sendReconfSignal("T2P")
+                                elif self._current_color == "green":
+                                    self.setRobotState(RobotState.FetchPink)
+
                         elif self.robot_state == RobotState.VisualServoForRepickup:
                             self.setBehavior("Tank", "TankPickup", True)
                             self._carry_item = True
@@ -336,14 +340,20 @@ class MissionPlanner(object):
                 rospy.logerr("What?! You are done!!? How come!!!? You shouldn't be here!")
 
             if self.robot_state == RobotState.FetchPink:
-                self.setBehavior("newPro", "ProTunnelPickup", True)
-                self.setBehavior("newPro", "ProDrop", True)
+                if self._current_color == "pink":
+                    self.setBehavior("newPro", "ProTunnelPickup", True)
+                    self.setBehavior("newPro", "ProDrop", True)
 
-                self.setRobotState(RobotState.ReconfigurationP2T)
-                rospy.loginfo("Running pre-reconfiguration behavior.")
-                self.setBehavior("newPro", "ProFlat", True)
-                rospy.loginfo("Send reconfiguration signal.")
-                self.sendReconfSignal("P2T")
+                    self.setRobotState(RobotState.ReconfigurationP2T)
+                    rospy.loginfo("Running pre-reconfiguration behavior.")
+                    self.setBehavior("newPro", "ProFlat", True)
+                    rospy.loginfo("Send reconfiguration signal.")
+                    self.sendReconfSignal("P2T")
+                elif self._current_color == "green":
+                    self.setBehavior("Tank", "", False)
+                    self.setRobotState(RobotState.VisualServoForRepickup)
+                else:
+                    rospy.logerr("Unrecognized color {}".format(self._current_color))
 
             if self.robot_state == RobotState.ReconfigurationP2T:
                 if self.isReconfFinished():
