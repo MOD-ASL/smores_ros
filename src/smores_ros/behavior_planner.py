@@ -227,8 +227,12 @@ class BehaviorPlanner(object):
         rospy.loginfo("Drop")
         self.MP.c.mods[front].mag.control("top", "off")
         rospy.sleep(0.1)
-        self.MP.c.mods[front].move.command_position("tilt", -15.0/180*pi,3)
+        self.MP.c.mods[front].move.command_position("tilt", -35.0/180*pi,3)
+        rospy.sleep(0.1)
+        self.MP.c.mods[front].move.command_position("tilt", -35.0/180*pi,3)
         rospy.sleep(3.1)
+        self.MP.c.mods[front].move.command_position("tilt", 0.0/180*pi,3)
+        rospy.sleep(0.1)
         self.MP.c.mods[front].move.command_position("tilt", 0.0/180*pi,3)
 
         rospy.loginfo("Moving back")
