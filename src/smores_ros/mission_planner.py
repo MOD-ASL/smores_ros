@@ -282,10 +282,8 @@ class MissionPlanner(object):
                                     self.setBehavior("Tank", "TankReconf", True)
                                     rospy.loginfo("Send reconfiguration signal.")
                                     self.sendReconfSignal("T2P")
-
                                 elif self._current_color == "green":
                                     self.setRobotState(RobotState.FetchPink)
-
                         elif self.robot_state == RobotState.VisualServoForRepickup:
                             self.setBehavior("Tank", "TankPickup", True)
                             self._carry_item = True
@@ -344,7 +342,7 @@ class MissionPlanner(object):
                     rospy.sleep(3)
                     self.setBehavior("newPro", "ProTunnelStandup", True)
 
-                    for i in xrange(10):
+                    for i in xrange(12):
                         try:
                             pose = rospy.wait_for_message(self.param_dict["pink_obj_topic_name"],
                                                           Vector3, timeout=1.0)
