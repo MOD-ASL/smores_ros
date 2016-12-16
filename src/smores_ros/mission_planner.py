@@ -232,7 +232,11 @@ class MissionPlanner(object):
                     #TODO: If no need for reconf, don't servo?
                     rospy.loginfo("Finished docking.")
                     self.setBehavior("", "", False)
-                    self.setRobotState(RobotState.VisualServo)
+                    if self._current_color == "pink":
+                        self.setRobotState(RobotState.VisualServo)
+                    elif self._current_color == "green":
+                        self.setRobotState(RobotState.VisualServoForRepickup)
+
                 elif state == GoalStatus.ACTIVE:
                     self.setBehavior("Tank", "Tank_diff.xml", False)
                     self.isColorObjDetected("blue")
@@ -332,7 +336,7 @@ class MissionPlanner(object):
                     rospy.sleep(0.1)
                 self.setBehavior("", "", True)
 
-                self.setRobotState(RobotState.Done)
+                self.setRobotState(RobotState.Idle)
 
             if self.robot_state == RobotState.Done:
                 rospy.logerr("What?! You are done!!? How come!!!? You shouldn't be here!")
