@@ -185,11 +185,11 @@ class MissionPlanner(object):
 
     def doVisualServo(self, x):
         data = Twist()
-        if x < -5.:
+        if x < 15.:
             # Turn left
             data.angular.z = 0.18
             self.cmd_vel_pub.publish(data)
-        elif x > 5.:
+        elif x > 25.:
             # Turn right
             data.angular.z = -0.18
             self.cmd_vel_pub.publish(data)
@@ -265,7 +265,7 @@ class MissionPlanner(object):
 
                 if pose is not None:
                     rospy.loginfo("Current x value is {}.".format(pose.x))
-                    if pose.x < -5. or pose.x > 5.:
+                    if pose.x < 15. or pose.x > 25.:
                         self.doVisualServo(pose.x)
                     else:
                         if self.robot_state == RobotState.VisualServo:
@@ -341,6 +341,31 @@ class MissionPlanner(object):
 
             if self.robot_state == RobotState.FetchPink:
                 if self._current_color == "pink":
+                    rospy.sleep(3)
+                    self.setBehavior("newPro", "ProTunnelStandup", True)
+
+                    for i in xrange(10):
+                        try:
+                            pose = rospy.wait_for_message(self.param_dict["pink_obj_topic_name"],
+                                                          Vector3, timeout=1.0)
+                        except rospy.ROSException:
+                            pose = None
+                            rospy.logwarn("Cannot find pink object when visual servoing.")
+
+                        if pose is not None:
+                            rospy.logdebug("Current x value is {}.".format(pose.x))
+                            if pose.x < 15.:
+                                self.setBehavior("newPro", "ProTunnelLeft", True)
+                            elif pose.x > 25.:
+                                self.setBehavior("newPro", "ProTunnelRight", True)
+                            else:
+                                self.setBehavior("newPro", "ProTunnelForward", True)
+                        else:
+                            self.setBehavior("newPro", "ProTunnelForward", True)
+
+                        self.setBehavior("newPro", "allMagnets", True)
+
+                    rospy.loginfo("Pickup")
                     self.setBehavior("newPro", "ProTunnelPickup", True)
                     self.setBehavior("newPro", "ProDrop", True)
 
@@ -349,6 +374,7 @@ class MissionPlanner(object):
                     self.setBehavior("newPro", "ProFlat", True)
                     rospy.loginfo("Send reconfiguration signal.")
                     self.sendReconfSignal("P2T")
+
                 elif self._current_color == "green":
                     self.setBehavior("Tank", "", False)
                     self.setRobotState(RobotState.VisualServoForRepickup)
