@@ -332,7 +332,7 @@ class MissionPlanner(object):
                 rospy.sleep(3)
                 self.setBehavior("newPro", "ProTunnelStandup", True)
 
-                for i in xrange(10):
+                for i in xrange(12):
                     try:
                         pose = rospy.wait_for_message(self.param_dict["pink_obj_topic_name"],
                                                       Vector3, timeout=1.0)
