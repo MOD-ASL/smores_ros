@@ -2,8 +2,8 @@ input:
     x: self._current_cmd.linear.x
     y: self._current_cmd.angular.z
 output:
-    para_L: -(x/0.2*100.0-y/0.4*50.0) 
-    para_R: -(-x/0.2*100.0-y/0.4*50.0)
+    para_L: -(x/0.2*150.0-y/0.4*50.0) 
+    para_R: -(-x/0.2*150.0-y/0.4*50.0)
 
 
 # The negative sign in front of each parameter is due to the fact that the pan Dof is flipped between VSPARC and the actual hardware
