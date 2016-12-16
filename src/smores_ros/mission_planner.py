@@ -195,11 +195,12 @@ class MissionPlanner(object):
             self.cmd_vel_pub.publish(data)
 
     def _stopDriving(self):
-        self.setBehavior("", "", False)
         data = Twist()
         data.angular.z = 0.0
         self.cmd_vel_pub.publish(data)
         self.cmd_vel_pub.publish(data)
+        self.cmd_vel_pub.publish(data)
+        self.setBehavior("", "", False)
 
     def _resumeDriving(self):
         self.setBehavior("Tank", "Tank_diff.xml", False)
@@ -259,7 +260,7 @@ class MissionPlanner(object):
                     rospy.logwarn("Cannot find {} object when visual servoing. Random spinning.".format(color))
                     # Turn left
                     data = Twist()
-                    data.angular.z = -0.3
+                    data.angular.z = 0.3
                     self.cmd_vel_pub.publish(data)
 
                 if pose is not None:
@@ -286,7 +287,7 @@ class MissionPlanner(object):
                             self._carry_item = True
                             # Rotate the robot after pickup
                             self.setBehavior("Tank", "Tank_diff.xml", False)
-                            for i in xrange(10):
+                            for i in xrange(15):
                                 # Turn left
                                 data = Twist()
                                 data.angular.z = 1.0
@@ -373,7 +374,7 @@ class MissionPlanner(object):
                     rospy.loginfo("Getting blue docking pose.")
                     dock_pose, self.reconf_type = self.getDockPose(blue_pose)
                     rospy.loginfo("Driving to blue.")
-                    self.sendnavgoalrequest(dock_pose)
+                    self.sendNavgoalrequest(dock_pose)
                     self.setbehavior("tank", "tank_diff.xml", false)
 
             if (self.robot_state == RobotState.DriveToBlue):
