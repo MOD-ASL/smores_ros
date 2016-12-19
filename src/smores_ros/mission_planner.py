@@ -199,8 +199,9 @@ class MissionPlanner(object):
         data.angular.z = 0.0
         self.cmd_vel_pub.publish(data)
         self.cmd_vel_pub.publish(data)
-        self.cmd_vel_pub.publish(data)
         self.setBehavior("", "", False)
+        self.cmd_vel_pub.publish(data)
+        self.cmd_vel_pub.publish(data)
 
     def _resumeDriving(self):
         self.setBehavior("Tank", "Tank_diff.xml", False)
@@ -217,9 +218,8 @@ class MissionPlanner(object):
                     rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
                     color_pose = self.getColorObjPose(self._current_color)
                     if color_pose is None:
-                        rospy.logwarn("Cannot find {} object. Roll back to Idle.".format(self._current_color))
-                        self.setRobotState(RobotState.Idle)
-                        self._color_dock_time = None
+                        rospy.logwarn("Cannot find {} object. Continue")
+                        self._color_dock_time = time.time()
                         continue
                     dock_pose, self.reconf_type = self.getDockPose(color_pose)
                     self.sendNavGoalRequest(dock_pose)
@@ -256,7 +256,6 @@ class MissionPlanner(object):
                         color = "blue"
                     else:
                         color = self._current_color
-
                     pose = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
                                                   Vector3, timeout=1.0)
                 except rospy.ROSException:
@@ -278,9 +277,23 @@ class MissionPlanner(object):
                                 self.setRobotState(RobotState.DropPink)
                             else:
                                 rospy.loginfo("Finished visual servoing.")
+                                self.setBehavior("Tank", "StopTank", True)
                                 self._stopDriving()
                                 if self._current_color == "pink":
-                                    # Do reconfiguration
+                                    rospy.loginfo("Recheck heading.")
+                                    try:
+                                        pose = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
+                                                                      Vector3, timeout=1.0)
+                                        rospy.logdebug("Current x value is {}.".format(pose.x))
+                                        if pose.x < 15. or pose.x > 25.:
+                                            continue
+                                    except rospy.ROSException:
+                                        pose = None
+                                        rospy.logwarn("Cannot find {} object when visual servoing.".format(color))
+                                        continue
+
+                                    rospy.loginfo("Really finished visual servoing.")
+                                    self.setBehavior("Tank", "StopTank", True)
                                     self.setRobotState(RobotState.ReconfigurationT2P)
                                     rospy.loginfo("Running pre-reconfiguration behavior.")
                                     self.setBehavior("Tank", "TankReconf", True)
@@ -296,7 +309,7 @@ class MissionPlanner(object):
                             for i in xrange(15):
                                 # Turn left
                                 data = Twist()
-                                data.angular.z = 1.0
+                                data.angular.z = 0.5
                                 self.cmd_vel_pub.publish(data)
                                 rospy.sleep(1)
                             for i in xrange(10):
@@ -344,33 +357,8 @@ class MissionPlanner(object):
             if self.robot_state == RobotState.FetchPink:
                 if self._current_color == "pink":
                     rospy.sleep(3)
-                    self.setBehavior("newPro", "ProTunnelStandup", True)
-
-                    for i in xrange(12):
-                        try:
-                            pose = rospy.wait_for_message(self.param_dict["pink_obj_topic_name"],
-                                                          Vector3, timeout=1.0)
-                        except rospy.ROSException:
-                            pose = None
-                            rospy.logwarn("Cannot find pink object when visual servoing.")
-
-                        if pose is not None:
-                            rospy.logdebug("Current x value is {}.".format(pose.x))
-                            if pose.x < 15.:
-                                self.setBehavior("newPro", "ProTunnelLeft", True)
-                            elif pose.x > 25.:
-                                self.setBehavior("newPro", "ProTunnelRight", True)
-                            else:
-                                self.setBehavior("newPro", "ProTunnelForward", True)
-                        else:
-                            self.setBehavior("newPro", "ProTunnelForward", True)
-
-                        self.setBehavior("newPro", "allMagnets", True)
-
-                    rospy.loginfo("Pickup")
                     self.setBehavior("newPro", "ProTunnelPickup", True)
                     self.setBehavior("newPro", "ProDrop", True)
-
                     self.setRobotState(RobotState.ReconfigurationP2T)
                     rospy.loginfo("Running pre-reconfiguration behavior.")
                     self.setBehavior("newPro", "ProFlat", True)
@@ -412,8 +400,8 @@ class MissionPlanner(object):
                     rospy.loginfo("Getting blue docking pose.")
                     dock_pose, self.reconf_type = self.getDockPose(blue_pose)
                     rospy.loginfo("Driving to blue.")
-                    self.sendNavgoalrequest(dock_pose)
-                    self.setbehavior("tank", "tank_diff.xml", false)
+                    self.sendNavGoalRequest(dock_pose)
+                    self.setBehavior("Tank", "Tank_diff.xml", False)
 
             if (self.robot_state == RobotState.DriveToBlue):
                 # Driving to the blue object

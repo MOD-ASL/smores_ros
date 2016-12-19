@@ -92,11 +92,13 @@ class BehaviorPlanner(object):
                 if request.behavior_name == "ProTunnelStandup":
                     self._ProTunnelStandup()
                 if request.behavior_name == "allMagnets":
-                    self.MP.allMagnets()
+                    self.MP.allMagnets("on")
                 if request.behavior_name == "ProDrop":
                     self.ProDrop()
                 if request.behavior_name == "TankDrop":
                     self.TankDrop()
+                if request.behavior_name == "StopTank":
+                    self.stopTank()
                 if request.behavior_name == "TankPickup":
                     self.TankPickup()
                 if request.behavior_name == "TankStandup":
@@ -167,29 +169,35 @@ class BehaviorPlanner(object):
                         para_mapping, blocking = False)
 
     def TankReconf(self):
-        self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,2)
-        self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,2)
-        self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
-        self.MP.c.mods[front_l].move.command_position("tilt",20*pi/180,2)
-        self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,2)
         rospy.sleep(2)
+        self.MP.c.mods[front].move.command_position("tilt",0*pi/180,5)
+        self.MP.c.mods[front_l].move.command_position("tilt",20*pi/180,5)
+        self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,5)
+        rospy.sleep(6)
+        self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,5)
+        self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,5)
+        rospy.sleep(5)
+
+    def stopTank(self):
+        self.MP.c.mods[back_r].move.send_torque("pan",0.)
+        self.MP.c.mods[back_l].move.send_torque("pan",0.)
+        self.MP.c.mods[front_l].move.send_torque("pan",0.)
+        self.MP.c.mods[front_r].move.send_torque("pan",0.)
 
     def ProTunnelPickup(self):
-        #self._ProTunnelStandup()
-        #rospy.sleep(3)
-        #rospy.loginfo("Moving forward")
-        #for i in xrange(12):
-        #    if i == 11:
-        #        rospy.loginfo("Pickup")
-        #        self._ProTunnelPickup()
-        #    self._ProTunnelForward()
-        #    rospy.sleep(2.1)
-        #    self.MP.allMagnets("on")
-        #    rospy.sleep(0.1)
-
-        i = 0
+        self._ProTunnelStandup()
+        rospy.sleep(3)
+        rospy.loginfo("Moving forward")
         for i in xrange(12):
-            rospy.loginfo("Moving back")
+            if i == 11:
+                rospy.loginfo("Pickup")
+                self._ProTunnelPickup()
+            self._ProTunnelForward()
+            rospy.sleep(2.1)
+            self.MP.allMagnets("on")
+            rospy.sleep(0.1)
+        rospy.loginfo("Moving back")
+        for i in xrange(12):
             self._ProTunnelBack()
             rospy.sleep(2.1)
             self.MP.allMagnets("on")
@@ -218,7 +226,7 @@ class BehaviorPlanner(object):
                 self.MP.c.mods[front].move.command_position("tilt", -5.0/180*pi,3)
             self._TankForward()
             rospy.sleep(2.1)
-            self.MP.c.mods[front].mag.control("top", "on")
+            self.MP.allMagnets("on")
 
         i = 0
         for i in xrange(5):
@@ -249,66 +257,57 @@ class BehaviorPlanner(object):
             rospy.sleep(2.1)
 
     def _ProTunnelForward(self):
-        self.MP.c.mods[back_r].move.command_velocity("pan",-100,2)
-        self.MP.c.mods[back_l].move.command_velocity("pan",100,2)
-        self.MP.c.mods[front_l].move.command_velocity("left",30,2)
-        rospy.sleep(0.01)
-        self.MP.c.mods[front_l].move.command_velocity("right",-30,2)
-        self.MP.c.mods[front_r].move.command_velocity("left",30,2)
-        rospy.sleep(0.01)
-        self.MP.c.mods[front_r].move.command_velocity("right",-30,2)
-
-    def _ProTunnelForwardWithTurn(self, direction):
-        if direction = "r":
-            self.MP.c.mods[back_r].move.command_velocity("pan",-30,2)
-        else:
+        for i in xrange(3):
             self.MP.c.mods[back_r].move.command_velocity("pan",-100,2)
-
-        if direction = "l":
-            self.MP.c.mods[back_l].move.command_velocity("pan",30,2)
-        else:
             self.MP.c.mods[back_l].move.command_velocity("pan",100,2)
-
-        self.MP.c.mods[front_l].move.command_velocity("left",30,2)
-        rospy.sleep(0.01)
-        self.MP.c.mods[front_l].move.command_velocity("right",-30,2)
-        self.MP.c.mods[front_r].move.command_velocity("left",30,2)
-        rospy.sleep(0.01)
-        self.MP.c.mods[front_r].move.command_velocity("right",-30,2)
+            self.MP.c.mods[front_l].move.command_velocity("left",30,2)
+            rospy.sleep(0.01)
+            self.MP.c.mods[front_l].move.command_velocity("right",-30,2)
+            self.MP.c.mods[front_r].move.command_velocity("left",30,2)
+            rospy.sleep(0.01)
+            self.MP.c.mods[front_r].move.command_velocity("right",-30,2)
+            rospy.sleep(0.05)
 
     def _ProTunnelBack(self):
-        self.MP.c.mods[back_r].move.command_velocity("pan",100,2)
-        self.MP.c.mods[back_l].move.command_velocity("pan",-100,2)
-        self.MP.c.mods[front_l].move.command_velocity("left",-40,2)
-        rospy.sleep(0.01)
-        self.MP.c.mods[front_l].move.command_velocity("right",40,2)
-        self.MP.c.mods[front_r].move.command_velocity("left",-40,2)
-        rospy.sleep(0.01)
-        self.MP.c.mods[front_r].move.command_velocity("right",40,2)
+        for i in xrange(3):
+            self.MP.c.mods[back_r].move.command_velocity("pan",100,2)
+            self.MP.c.mods[back_l].move.command_velocity("pan",-100,2)
+            self.MP.c.mods[front_l].move.command_velocity("left",-40,2)
+            rospy.sleep(0.05)
+            self.MP.c.mods[front_l].move.command_velocity("right",40,2)
+            self.MP.c.mods[front_r].move.command_velocity("left",-40,2)
+            rospy.sleep(0.05)
+            self.MP.c.mods[front_r].move.command_velocity("right",40,2)
+            rospy.sleep(0.05)
 
     def _ProTunnelPickup(self):
         self.MP.c.mods[front_r].move.command_position("tilt",10*pi/180,2)
 
     def _ProTunnelStandup(self):
         for i in xrange(3):
-            self.MP.c.mods[back_r].move.command_position("tilt",-45*pi/180,2)
-            self.MP.c.mods[back_l].move.command_position("tilt",-45*pi/180,2)
+            self.MP.c.mods[back_r].move.command_position("tilt",-25*pi/180,2)
+            self.MP.c.mods[back_l].move.command_position("tilt",-25*pi/180,2)
             self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
             self.MP.c.mods[front_l].move.command_position("tilt",5*pi/180,2)
             self.MP.c.mods[front_r].move.command_position("tilt",-5*pi/180,2)
+            rospy.sleep(0.05)
         rospy.sleep(2)
 
     def _TankBack(self):
-        self.MP.c.mods[back_r].move.command_velocity("pan",90,2)
-        self.MP.c.mods[back_l].move.command_velocity("pan",-90,2)
-        self.MP.c.mods[front_l].move.command_velocity("pan",-90,2)
-        self.MP.c.mods[front_r].move.command_velocity("pan",90,2)
+        for i in xrange(3):
+            self.MP.c.mods[back_r].move.command_velocity("pan",90,2)
+            self.MP.c.mods[back_l].move.command_velocity("pan",-90,2)
+            self.MP.c.mods[front_l].move.command_velocity("pan",-90,2)
+            self.MP.c.mods[front_r].move.command_velocity("pan",90,2)
+            rospy.sleep(0.05)
 
     def _TankForward(self):
-        self.MP.c.mods[back_r].move.command_velocity("pan",-90,2)
-        self.MP.c.mods[back_l].move.command_velocity("pan",90,2)
-        self.MP.c.mods[front_l].move.command_velocity("pan",90,2)
-        self.MP.c.mods[front_r].move.command_velocity("pan",-90,2)
+        for i in xrange(3):
+            self.MP.c.mods[back_r].move.command_velocity("pan",-90,2)
+            self.MP.c.mods[back_l].move.command_velocity("pan",90,2)
+            self.MP.c.mods[front_l].move.command_velocity("pan",90,2)
+            self.MP.c.mods[front_r].move.command_velocity("pan",-90,2)
+            rospy.sleep(0.05)
 
     def _TankPostReconfStandup(self):
         self.MP.allMagnets("on")
@@ -340,9 +339,11 @@ class BehaviorPlanner(object):
 
     def _ProFlat(self):
         rospy.sleep(2)
-        self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,2)
-        self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,2)
-        self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
-        self.MP.c.mods[front_l].move.command_position("tilt",-5*pi/180,2)
-        self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,2)
+        for i in xrange(3):
+            self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,2)
+            self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,2)
+            self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
+            self.MP.c.mods[front_l].move.command_position("tilt",-5*pi/180,2)
+            self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,2)
+            rospy.sleep(0.05)
         rospy.sleep(2)
