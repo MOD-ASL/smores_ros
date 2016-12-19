@@ -331,6 +331,8 @@ class MissionPlanner(object):
 
             if self.robot_state == RobotState.DropPink:
                 self.setBehavior("Tank", "TankDrop", True)
+                self._done_color.append(self._current_color)
+                self.setRobotState(RobotState.Idle)
                 self._carry_item = False
 
                 # Rotate the robot after drop
@@ -425,7 +427,7 @@ class MissionPlanner(object):
                     rospy.loginfo("Driving to blue.")
                     self.sendNavGoalRequest(dock_pose)
                     self.setBehavior("Tank", "Tank_diff.xml", False)
-                elif (not self._carry_item) and ("pink" not in self._done_color) and self.isColorObjDetected("pink"):
+                elif self.isColorObjDetected("pink") and (not self._carry_item) and ("pink" not in self._done_color):
                     self._current_color = "pink"
                     # Find pink
                     self.setRobotState(RobotState.DriveToDock)
@@ -433,7 +435,7 @@ class MissionPlanner(object):
                     dock_pose, self.reconf_type = self.getDockPose(self.getColorObjPose(self._current_color))
                     self.sendNavGoalRequest(dock_pose)
                     self.setBehavior("Tank", "Tank_diff.xml", False)
-                elif (not self._carry_item) and ("green" not in self._done_color) and self.isColorObjDetected("green"):
+                elif self.isColorObjDetected("green") and (not self._carry_item) and ("green" not in self._done_color) :
                     self._current_color = "green"
                     # Find green
                     self.setRobotState(RobotState.DriveToDock)
