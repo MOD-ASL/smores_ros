@@ -215,20 +215,38 @@ class BehaviorPlanner(object):
         for i in xrange(self._cmd_repeat_time):
             self.MP.c.mods[front_r].mag.control("top", "off")
             rospy.sleep(0.01)
+
         rospy.sleep(0.1)
+
         for i in xrange(self._cmd_repeat_time):
-            self.MP.c.mods[front_r].move.command_position("tilt", -15.0/180*pi,3)
+            self.MP.c.mods[front_r].move.command_position("tilt", -25.0/180*pi,3)
             rospy.sleep(0.01)
+
         rospy.sleep(3.1)
+        for i in xrange(self._cmd_repeat_time):
+            self.MP.c.mods[front_r].mag.control("top", "off")
+            rospy.sleep(0.01)
+
+        rospy.sleep(0.1)
+
         for i in xrange(self._cmd_repeat_time):
             self.MP.c.mods[front_r].move.command_position("tilt", 0.0/180*pi,3)
             rospy.sleep(0.01)
+
         rospy.sleep(3.1)
+        for i in xrange(self._cmd_repeat_time):
+            self.MP.c.mods[front_r].mag.control("top", "off")
+            rospy.sleep(0.01)
+
+        rospy.sleep(0.1)
 
         rospy.loginfo("Moving back")
         for i in xrange(2):
             self._ProTunnelBack()
             rospy.sleep(2.1)
+            for i in xrange(self._cmd_repeat_time):
+                self.MP.c.mods[front_r].mag.control("top", "off")
+                rospy.sleep(0.01)
 
     def TankPickup(self):
         rospy.loginfo("Moving forward")
@@ -256,6 +274,8 @@ class BehaviorPlanner(object):
         rospy.loginfo("Drop")
         for i in xrange(self._cmd_repeat_time):
             self.MP.c.mods[front].mag.control("top", "off")
+            self.MP.c.mods[front_l].mag.control("right", "off")
+            self.MP.c.mods[front_r].mag.control("left", "off")
             rospy.sleep(0.01)
         for i in xrange(self._cmd_repeat_time):
             self.MP.c.mods[front].move.command_position("tilt", -35.0/180*pi,3)
@@ -364,7 +384,7 @@ class BehaviorPlanner(object):
     def _ProFlat(self):
         rospy.sleep(2)
         for i in xrange(self._cmd_repeat_time):
-            self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,2)
+            self.MP.c.mods[back_r].move.command_position("tilt",0*pi/180,2)
             self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,2)
             self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
             self.MP.c.mods[front_l].move.command_position("tilt",-5*pi/180,2)
