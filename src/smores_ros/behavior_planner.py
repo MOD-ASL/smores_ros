@@ -185,21 +185,19 @@ class BehaviorPlanner(object):
         self.MP.c.mods[front_r].move.send_torque("pan",0.)
 
     def ProTunnelPickup(self):
-        #self._ProTunnelStandup()
-        #rospy.sleep(3)
-        #rospy.loginfo("Moving forward")
-        #for i in xrange(12):
-        #    if i == 11:
-        #        rospy.loginfo("Pickup")
-        #        self._ProTunnelPickup()
-        #    self._ProTunnelForward()
-        #    rospy.sleep(2.1)
-        #    self.MP.allMagnets("on")
-        #    rospy.sleep(0.1)
-
-        i = 0
+        self._ProTunnelStandup()
+        rospy.sleep(3)
+        rospy.loginfo("Moving forward")
         for i in xrange(12):
-            rospy.loginfo("Moving back")
+            if i == 11:
+                rospy.loginfo("Pickup")
+                self._ProTunnelPickup()
+            self._ProTunnelForward()
+            rospy.sleep(2.1)
+            self.MP.allMagnets("on")
+            rospy.sleep(0.1)
+        rospy.loginfo("Moving back")
+        for i in xrange(12):
             self._ProTunnelBack()
             rospy.sleep(2.1)
             self.MP.allMagnets("on")
@@ -269,27 +267,6 @@ class BehaviorPlanner(object):
             rospy.sleep(0.01)
             self.MP.c.mods[front_r].move.command_velocity("right",-30,2)
             rospy.sleep(0.05)
-
-    def _ProTunnelForwardWithTurn(self, direction):
-        if direction == "r":
-            self.MP.c.mods[back_r].move.command_velocity("pan",-30,2)
-            self.MP.c.mods[back_l].move.command_velocity("pan",100,2)
-            self.MP.c.mods[front_l].move.command_velocity("left",30,2)
-            rospy.sleep(0.01)
-            self.MP.c.mods[front_l].move.command_velocity("right",-10,2)
-            self.MP.c.mods[front_r].move.command_velocity("left",30,2)
-            rospy.sleep(0.01)
-            self.MP.c.mods[front_r].move.command_velocity("right",-10,2)
-
-        if direction == "l":
-            self.MP.c.mods[back_l].move.command_velocity("pan",30,2)
-            self.MP.c.mods[back_r].move.command_velocity("pan",-100,2)
-            self.MP.c.mods[front_l].move.command_velocity("left",10,2)
-            rospy.sleep(0.01)
-            self.MP.c.mods[front_l].move.command_velocity("right",-30,2)
-            self.MP.c.mods[front_r].move.command_velocity("left",10,2)
-            rospy.sleep(0.01)
-            self.MP.c.mods[front_r].move.command_velocity("right",-30,2)
 
     def _ProTunnelBack(self):
         for i in xrange(3):

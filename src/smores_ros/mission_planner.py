@@ -344,37 +344,6 @@ class MissionPlanner(object):
 
             if self.robot_state == RobotState.FetchPink:
                 rospy.sleep(3)
-                self.setBehavior("newPro", "ProTunnelStandup", True)
-
-                for i in xrange(12):
-                    try:
-                        pose = rospy.wait_for_message(self.param_dict["pink_obj_topic_name"],
-                                                      Vector3, timeout=1.0)
-                    except rospy.ROSException:
-                        pose = None
-                        rospy.logwarn("Cannot find pink object when visual servoing.")
-
-                    if pose is not None:
-                        rospy.logdebug("Current x value is {}.".format(pose.x))
-                        if pose.x < 15.:
-                            #self.setBehavior("newPro", "ProTunnelLeft", True)
-                            self.setBehavior("newPro", "ProTunnelForward", True)
-                            rospy.sleep(2)
-                        elif pose.x > 25.:
-                            #self.setBehavior("newPro", "ProTunnelRight", True)
-                            self.setBehavior("newPro", "ProTunnelForward", True)
-                            rospy.sleep(2)
-                        else:
-                            self.setBehavior("newPro", "ProTunnelForward", True)
-                            rospy.sleep(2)
-                    else:
-                        self.setBehavior("newPro", "ProTunnelForward", True)
-                        rospy.sleep(2)
-
-                    self.setBehavior("newPro", "allMagnets", True)
-                    rospy.sleep(0.1)
-
-                rospy.loginfo("Pickup")
                 self.setBehavior("newPro", "ProTunnelPickup", True)
                 self.setBehavior("newPro", "ProDrop", True)
 
