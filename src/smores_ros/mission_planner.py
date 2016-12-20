@@ -62,6 +62,7 @@ class MissionPlanner(object):
                                 "~dock_point_service_name",
                                 "~pink_obj_topic_name",
                                 "~blue_obj_topic_name",
+                                "~green_obj_topic_name",
                                 "~navigation_action_name",
                                 "~reconf_signal_topic_name",
                                 "~reconf_status_topic_name",
@@ -206,6 +207,13 @@ class MissionPlanner(object):
     def _resumeDriving(self):
         self.setBehavior("Tank", "Tank_diff.xml", False)
 
+    def seenColorBefore(self, color):
+        pose = self.getColorObjPose(color,True)
+        if pose is None:
+            return False
+        else:
+            return True
+
     def main(self):
         rate = rospy.Rate(5)
 
@@ -235,7 +243,24 @@ class MissionPlanner(object):
                     if self._current_color == "pink":
                         self.setRobotState(RobotState.VisualServo)
                     elif self._current_color == "green":
-                        self.setRobotState(RobotState.VisualServoForRepickup)
+                        self.setBehavior("Tank", "TankPickup", True)
+                        self._carry_item = True
+                        # Rotate the robot after pickup
+                        self.setBehavior("Tank", "Tank_diff.xml", False)
+                        for i in xrange(15):
+                            # Turn left
+                            data = Twist()
+                            data.angular.z = 0.5
+                            self.cmd_vel_pub.publish(data)
+                            rospy.sleep(1)
+                        for i in xrange(10):
+                            # Turn left
+                            data = Twist()
+                            data.angular.z = 0.0
+                            self.cmd_vel_pub.publish(data)
+                            rospy.sleep(0.1)
+                        self.setBehavior("", "", True)
+                        self.setRobotState(RobotState.FindBlue)
 
                 elif state == GoalStatus.ACTIVE:
                     self.setBehavior("Tank", "Tank_diff.xml", False)
@@ -431,16 +456,16 @@ class MissionPlanner(object):
                     self._current_color = "pink"
                     # Find pink
                     self.setRobotState(RobotState.DriveToDock)
-                    rospy.loginfo("Getting {} docking pose.".format())
+                    rospy.loginfo("Getting {} docking pose.".format(self._current_color))
                     dock_pose, self.reconf_type = self.getDockPose(self.getColorObjPose(self._current_color))
                     self.sendNavGoalRequest(dock_pose)
                     self.setBehavior("Tank", "Tank_diff.xml", False)
-                elif self.isColorObjDetected("green") and (not self._carry_item) and ("green" not in self._done_color) :
+                elif (self.isColorObjDetected("green") or self.seenColorBefore("green")) and (not self._carry_item) and ("green" not in self._done_color) :
                     self._current_color = "green"
                     # Find green
                     self.setRobotState(RobotState.DriveToDock)
-                    rospy.loginfo("Getting {} docking pose.".format())
-                    dock_pose, self.reconf_type = self.getDockPose(self.getColorObjPose(self._current_color))
+                    rospy.loginfo("Getting {} docking pose.".format(self._current_color))
+                    dock_pose, self.reconf_type = self.getDockPose(self.getColorObjPose(self._current_color, True))
                     self.sendNavGoalRequest(dock_pose)
                     self.setBehavior("Tank", "Tank_diff.xml", False)
                 else:
