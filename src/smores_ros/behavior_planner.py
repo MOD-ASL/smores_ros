@@ -173,13 +173,13 @@ class BehaviorPlanner(object):
         rospy.sleep(2)
         for i in xrange(self._cmd_repeat_time):
             self.MP.c.mods[front].move.command_position("tilt",0*pi/180,5)
-            self.MP.c.mods[front_l].move.command_position("tilt",20*pi/180,5)
+            self.MP.c.mods[front_l].move.command_position("tilt",0*pi/180,5)
             self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,5)
             rospy.sleep(0.01)
         rospy.sleep(6)
         for i in xrange(self._cmd_repeat_time):
             self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,5)
-            self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,5)
+            self.MP.c.mods[back_l].move.command_position("tilt",0*pi/180,5)
             rospy.sleep(0.01)
         rospy.sleep(5)
 
@@ -325,7 +325,7 @@ class BehaviorPlanner(object):
             self.MP.c.mods[back_r].move.command_position("tilt",-25*pi/180,2)
             self.MP.c.mods[back_l].move.command_position("tilt",-25*pi/180,2)
             self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
-            self.MP.c.mods[front_l].move.command_position("tilt",5*pi/180,2)
+            self.MP.c.mods[front_l].move.command_position("tilt",0*pi/180,2)
             self.MP.c.mods[front_r].move.command_position("tilt",-5*pi/180,2)
             rospy.sleep(0.01)
         rospy.sleep(2)
@@ -384,10 +384,10 @@ class BehaviorPlanner(object):
     def _ProFlat(self):
         rospy.sleep(2)
         for i in xrange(self._cmd_repeat_time):
-            self.MP.c.mods[back_r].move.command_position("tilt",0*pi/180,2)
-            self.MP.c.mods[back_l].move.command_position("tilt",25*pi/180,2)
+            self.MP.c.mods[back_r].move.command_position("tilt",5*pi/180,2)
+            self.MP.c.mods[back_l].move.command_position("tilt",-5*pi/180,2)
             self.MP.c.mods[front].move.command_position("tilt",0*pi/180,2)
-            self.MP.c.mods[front_l].move.command_position("tilt",-5*pi/180,2)
+            self.MP.c.mods[front_l].move.command_position("tilt",0*pi/180,2)
             self.MP.c.mods[front_r].move.command_position("tilt",0*pi/180,2)
             rospy.sleep(0.01)
         rospy.sleep(2)
