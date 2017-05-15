@@ -81,6 +81,8 @@ class MissionPlanner(object):
                 self.param_dict["reconf_signal_topic_name"], String, queue_size=1)
         self.cmd_vel_pub = rospy.Publisher(
                 self.param_dict["drive_command_topic_name"], Twist, queue_size=1)
+        rospy.Subscriber(
+                self.param_dict["green_obj_topic_name"], Vector3, self._green_cb, queue_size=1)
 
         # Waiting for all service to be ready
         rospy.loginfo("Waiting for nbv pose service ...")
@@ -91,6 +93,22 @@ class MissionPlanner(object):
         rospy.wait_for_service(self.param_dict["set_behavior_service_name"])
         rospy.loginfo("Waiting for navigation action service ...")
         self.nav_action_client.wait_for_server()
+
+    def _green_cb(self, data):
+        color = "green"
+        pose = self.getColorObjPose(color)
+        if pose is None:
+            return
+        rospy.loginfo("{} object maybe detected. Checking.".format(color))
+        rospy.sleep(5)
+        pose = self.getColorObjPose(color)
+        if pose is None:
+            rospy.loginfo("False alarm.")
+            return
+        else:
+            rospy.loginfo("{} object definitely detected.".format(color))
+            self.color_cache[color] = pose
+            return
 
     def setRobotState(self, new_state):
         rospy.loginfo("Switching robot state from {} to {}."
@@ -113,14 +131,14 @@ class MissionPlanner(object):
                 return False
             else:
                 rospy.loginfo("{} object definitely detected.".format(color))
+                self.color_cache[color] = pose
                 return True
-        except (rospy.ROSException, AttributeError):
+        except (rospy.ROSException, AttributeError) as e:
             return False
 
     def getColorObjPose(self, color, cached = False):
         try:
             pose, rot = self.tf.lookupTransform("map", color + "Obj", rospy.Time(0))
-            self.color_cache[color] = pose
             return pose
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             if cached:
@@ -208,7 +226,7 @@ class MissionPlanner(object):
         self.setBehavior("Tank", "Tank_diff.xml", False)
 
     def seenColorBefore(self, color):
-        pose = self.getColorObjPose(color,True)
+        pose = self.color_cache[color]
         if pose is None:
             return False
         else:
@@ -226,7 +244,7 @@ class MissionPlanner(object):
                     rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
                     color_pose = self.getColorObjPose(self._current_color)
                     if color_pose is None:
-                        rospy.logwarn("Cannot find {} object. Continue")
+                        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
                         self._color_dock_time = time.time()
                         continue
                     dock_pose, self.reconf_type = self.getDockPose(color_pose)
@@ -243,18 +261,17 @@ class MissionPlanner(object):
                     if self._current_color == "pink":
                         self.setRobotState(RobotState.VisualServo)
                     elif self._current_color == "green":
-                        self.setBehavior("Tank", "TankPickup", True)
+                        self.setBehavior("Tank", "TankPickupNoMove", True)
                         self._carry_item = True
                         # Rotate the robot after pickup
                         self.setBehavior("Tank", "Tank_diff.xml", False)
-                        for i in xrange(15):
+                        for i in xrange(30):
                             # Turn left
                             data = Twist()
                             data.angular.z = 0.5
                             self.cmd_vel_pub.publish(data)
                             rospy.sleep(1)
                         for i in xrange(10):
-                            # Turn left
                             data = Twist()
                             data.angular.z = 0.0
                             self.cmd_vel_pub.publish(data)
@@ -338,7 +355,6 @@ class MissionPlanner(object):
                                 self.cmd_vel_pub.publish(data)
                                 rospy.sleep(1)
                             for i in xrange(10):
-                                # Turn left
                                 data = Twist()
                                 data.angular.z = 0.0
                                 self.cmd_vel_pub.publish(data)
@@ -360,16 +376,19 @@ class MissionPlanner(object):
                 self.setRobotState(RobotState.Idle)
                 self._carry_item = False
 
+                # Reset the robot
+                self.setBehavior("Tank", "TankReconf", True)
+                rospy.sleep(1)
+                self.setBehavior("Tank", "TankStandup", True)
                 # Rotate the robot after drop
                 self.setBehavior("Tank", "Tank_diff.xml", False)
-                for i in xrange(10):
+                for i in xrange(30):
                     # Turn left
                     data = Twist()
-                    data.angular.z = 1.0
+                    data.angular.z = -0.5
                     self.cmd_vel_pub.publish(data)
                     rospy.sleep(1)
                 for i in xrange(10):
-                    # Turn left
                     data = Twist()
                     data.angular.z = 0.0
                     self.cmd_vel_pub.publish(data)
