@@ -11,7 +11,7 @@ from SmoresModule import SmoresCluster
 """
 The configuration looks like:
 
-    SensorBox --> sc4(18)   sc3(23)   sc2(22)   sc1(4) --> Head
+    SensorBox --> sc4(18)   sc3(23)   sc2(22)   sc1(14) --> Head
                     ^
                     |
          This module is reversed
@@ -24,7 +24,7 @@ class StairsClimber:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "sc1":4,
+                               "sc1":14,
                                "sc2":22,
                                "sc3":23,
                                "sc4":18,
@@ -81,7 +81,7 @@ class StairsClimber:
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
@@ -98,7 +98,6 @@ class StairsClimber:
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
-        time.sleep(time_period)
 
         return time_period
 
