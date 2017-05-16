@@ -11,10 +11,7 @@ from SmoresModule import SmoresCluster
 """
 The configuration looks like:
 
-    SensorBox --> sc4(18)   sc3(23)   sc2(22)   sc1(14) --> Head
-                    ^
-                    |
-         This module is reversed
+    SensorBox --> sc4   sc3   sc2   sc1 --> Head
 
 """
 
@@ -24,9 +21,9 @@ class StairsClimber:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "sc1":14,
-                               "sc2":22,
-                               "sc3":23,
+                               "sc1":7,
+                               "sc2":23,
+                               "sc3":14,
                                "sc4":18,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
@@ -38,18 +35,30 @@ class StairsClimber:
             angle_offset = 0
         return (cmd_angle + angle_offset) * pi / 180
 
-    def climbUpStairs(self, c, para_val_dict = {"vel":30, "stairs_height":40}):
+    def climbDownStairs(self, c, para_val_dict = {"vel":-30, "stairs_height":60}):
+        """
+        Climb down stairs
+
+        vel:            backward velocity (default=-30)
+        stairs_height:  the height of the stairs (default=60)
+        """
+        return self.climbUpStairs(c, {"vel":para_val_dict["vel"], "stairs_height":para_val_dict["stairs_height"]})
+
+    def climbUpStairs(self, c, para_val_dict = {"vel":60, "stairs_height":60}):
         """
         Climb up stairs
 
-        vel:            forward velocity (default=30)
-        stairs_height:  the height of the stairs
+        vel:            forward velocity (default=60)
+        stairs_height:  the height of the stairs (default=60)
         """
 
         time_period = 8
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
@@ -69,13 +78,18 @@ class StairsClimber:
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc4"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
+            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
         time.sleep(time_period)
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(80.0, module_ID, "tilt"), time_period)
+            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
@@ -95,6 +109,8 @@ class StairsClimber:
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc4"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
+            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
@@ -110,9 +126,10 @@ class StairsClimber:
 
         time_period = 4
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
@@ -135,6 +152,7 @@ class StairsClimber:
 
         time_period = 2
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
@@ -145,15 +163,10 @@ class StairsClimber:
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+        c.allMagnets("on")
 
         return time_period
 
 if __name__ == "__main__":
     sc = StairsClimber()
     c = SmoresCluster.SmoresCluster(sc.module_mapping.values())
-    time.sleep(sc.standUp(c))
-    raw_input("Next?")
-    while True:
-        time.sleep(sc.climbUpStairs(c))
-        raw_input("Again?")
-
