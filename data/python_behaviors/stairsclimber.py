@@ -21,10 +21,10 @@ class StairsClimber:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "sc1":7,
+                               "sc1":12,
                                "sc2":23,
-                               "sc3":14,
-                               "sc4":18,
+                               "sc3":22,
+                               "sc4":7,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -44,12 +44,12 @@ class StairsClimber:
         """
         return self.climbUpStairs(c, {"vel":para_val_dict["vel"], "stairs_height":para_val_dict["stairs_height"]})
 
-    def climbUpStairs(self, c, para_val_dict = {"vel":60, "stairs_height":60}):
+    def climbUpStairs(self, c, para_val_dict = {"vel":60, "stairs_height":70}):
         """
         Climb up stairs
 
         vel:            forward velocity (default=60)
-        stairs_height:  the height of the stairs (default=60)
+        stairs_height:  the height of the stairs (default=70)
         """
 
         time_period = 8
@@ -114,6 +114,30 @@ class StairsClimber:
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
             time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+
+        return time_period
+
+    def flat(self, c, para_val_dict = {}):
+        """
+        Flaten the stairsclimber
+
+        """
+
+        time_period = 4
+
+        c.allMagnets("on")
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["sc1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["sc2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["sc3"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["sc4"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
         return time_period
 
