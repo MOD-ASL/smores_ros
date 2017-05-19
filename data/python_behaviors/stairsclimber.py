@@ -21,10 +21,10 @@ class StairsClimber:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "sc1":12,
-                               "sc2":23,
+                               "sc1":23,
+                               "sc2":7,
                                "sc3":22,
-                               "sc4":7,
+                               "sc4":1,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -44,7 +44,7 @@ class StairsClimber:
         """
         return self.climbUpStairs(c, {"vel":para_val_dict["vel"], "stairs_height":para_val_dict["stairs_height"]})
 
-    def climbUpStairs(self, c, para_val_dict = {"vel":60, "stairs_height":70}):
+    def climbUpStairs(self, c, para_val_dict = {"vel":70, "stairs_height":70}):
         """
         Climb up stairs
 
@@ -52,67 +52,59 @@ class StairsClimber:
         stairs_height:  the height of the stairs (default=70)
         """
 
-        time_period = 8
+        time_period = 10
 
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
-            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
-            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
         time.sleep(time_period)
 
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(80.0, module_ID, "tilt"), time_period)
-            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
-            time.sleep(0.01)
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
         return time_period
@@ -127,8 +119,14 @@ class StairsClimber:
 
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
+            time.sleep(0.05)
             module_ID = self.module_mapping["sc1"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+            # Let's also turn the two side wheels to zero position
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "left"), time_period)
+            time.sleep(0.05)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "right"), time_period)
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
@@ -138,6 +136,7 @@ class StairsClimber:
 
             module_ID = self.module_mapping["sc4"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
 
         return time_period
 
@@ -152,8 +151,9 @@ class StairsClimber:
 
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
+            time.sleep(0.05)
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
@@ -162,13 +162,26 @@ class StairsClimber:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["sc4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(90-para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
+
+        return time_period
+
+    def dropItem(self, c, para_val_dict = {}):
+        """
+        Drop the carried item
+        """
+        time_period = 1
+
+        for i in xrange(self._cmd_repeat_time):
+            time.sleep(0.05)
+            module_ID = self.module_mapping["sc1"]
+            c.mods[module_ID].mag.control("top","off")
 
         return time_period
 
     def forward(self, c, para_val_dict = {"vel":30, "stand_angle":40}):
         """
-        Drive the proboscis forward
+        Drive the stairsclimber forward
 
         vel:            forward velocity (default=30)
         stand_angle:    the tilt angle of modules to stand up (default=40)
@@ -180,14 +193,13 @@ class StairsClimber:
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
 
             module_ID = self.module_mapping["sc3"]
             c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
-            time.sleep(0.01)
+            time.sleep(0.05)
             c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
-        c.allMagnets("on")
 
         return time_period
 
