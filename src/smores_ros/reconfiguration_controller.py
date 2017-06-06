@@ -6,7 +6,7 @@ import sys
 import yaml
 from numpy import sqrt
 from math import pi
-from smores_controller import smores_controller
+from smores_ros import smores_controller
 import rospkg
 from std_msgs.msg import String
 
