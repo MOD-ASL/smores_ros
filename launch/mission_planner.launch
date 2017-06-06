@@ -6,14 +6,16 @@
         <param name="blue_obj_topic_name" value="bluePt" />
         <param name="green_obj_topic_name" value="greenPt" />
         <param name="navigation_action_name" value="move_base" />
-        <param name="reconf_signal_topic_name" value="reconf_signal" />
-        <param name="reconf_status_topic_name" value="reconf_status" />
+        <param name="reconf_signal_topic_name_1" value="Reconfiguration_Controller_1/reconf_signal" />
+        <param name="reconf_status_topic_name_1" value="Reconfiguration_Controller_1/reconf_status" />
+        <param name="reconf_signal_topic_name_2" value="Reconfiguration_Controller_2/reconf_signal" />
+        <param name="reconf_status_topic_name_2" value="Reconfiguration_Controller_2/reconf_status" />
         <param name="set_behavior_service_name" value="set_behavior" />
         <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
     </node>
     <node name="SMORES_Behavior_Planner" pkg="smores_ros" type="behavior_planner_node.py" output="screen">
         <param name="set_behavior_service_name" value="set_behavior" />
-        <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/" />
+        <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/python_behaviors" />
         <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
     </node>
     <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">

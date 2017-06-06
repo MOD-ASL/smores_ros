@@ -129,7 +129,7 @@ class Proboscis:
 
     def flat(self, c, para_val_dict = {}):
         """
-        Flaten the stairsclimber
+        Flaten the proboscis
 
         """
 
@@ -243,7 +243,7 @@ class Proboscis:
 
         return time_period
 
-    def standUp(self, c, para_val_dict = {"stand_angle":-25}):
+    def stand(self, c, para_val_dict = {"stand_angle":-25}):
         """
         Stand up the proboscis
 
