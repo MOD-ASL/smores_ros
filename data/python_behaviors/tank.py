@@ -27,10 +27,10 @@ class Tank:
                                "back_r":7,
                                "back_l":22,
                                "back_m":5,
-                               "mid":15,
+                               "mid":5,
                                "front_l":16,
                                "front_m":23,
-                               "front_r":5,
+                               "front_r":15,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -65,7 +65,7 @@ class Tank:
 
         return time_period
 
-    def standUp(self, c, para_val_dict = {"stand_angle":-45}):
+    def stand(self, c, para_val_dict = {"stand_angle":-45}):
         """
         Stand up the tank
 
@@ -91,8 +91,8 @@ class Tank:
         return time_period
 
     def driveWithVW(self, c, v, w, stand_angle=-45, tilt=False):
-        vel_l = -(v/0.2*150.0-w/0.4*50.0)
-        vel_r = -(-v/0.2*150.0-w/0.4*50.0)
+        vel_l = v/0.2*150.0-w/0.4*50.0
+        vel_r = -v/0.2*150.0-w/0.4*50.0
 
         return self.drive(c, {"vel_l":vel_l, "vel_r":vel_r, "stand_angle":stand_angle, "tilt":tilt})
 
@@ -108,26 +108,26 @@ class Tank:
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_r"], time_period)
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_l"], time_period)
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["front_r"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_front"], time_period)
+            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_r"], time_period)
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["front_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_front"], time_period)
+            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_l"], time_period)
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)

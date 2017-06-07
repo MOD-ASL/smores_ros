@@ -1,4 +1,5 @@
 <launch>
+    <!--
     <node name="SMORES_Mission_Planner" pkg="smores_ros" type="mission_planner_node.py" output="screen">
         <param name="nbv_service_name" value="nbv_relay" />
         <param name="dock_point_service_name" value="get_target" />
@@ -13,14 +14,15 @@
         <param name="set_behavior_service_name" value="set_behavior" />
         <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
     </node>
-    <node name="SMORES_Behavior_Planner" pkg="smores_ros" type="behavior_planner_node.py" output="screen">
-        <param name="set_behavior_service_name" value="set_behavior" />
-        <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/python_behaviors" />
-        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
-    </node>
     <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">
         <param name="nbv_request_topic" value="/nbv_iter" />
         <param name="nbv_result_topic" value="/nbv_pose" />
         <param name="timeout_period" value="600" />
+    </node>
+    -->
+    <node name="SMORES_Behavior_Planner" pkg="smores_ros" type="behavior_planner_node.py" output="screen">
+        <param name="set_behavior_service_name" value="set_behavior" />
+        <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/python_behaviors" />
+        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
     </node>
 </launch>

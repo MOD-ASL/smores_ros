@@ -127,6 +127,6 @@ class BehaviorPlanner(object):
                 if self._current_cmd is None:
                     continue
 
-                b = self.behaivor_dict[request.configuration_name]
+                b = self.behaivor_dict[self.robot_configuration_name]
                 b.driveWithVW(self.c, self._current_cmd.linear.x,
-                            self._current_cmd.anular.z)
+                            self._current_cmd.angular.z)

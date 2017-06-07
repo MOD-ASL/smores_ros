@@ -140,7 +140,7 @@ class StairsClimber:
 
         return time_period
 
-    def standUp(self, c, para_val_dict = {"stand_angle":40}):
+    def stand(self, c, para_val_dict = {"stand_angle":40}):
         """
         Stand up the stairsclimber
 
