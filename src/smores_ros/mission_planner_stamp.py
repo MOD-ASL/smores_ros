@@ -91,6 +91,7 @@ class MissionPlanner(object):
         rospy.wait_for_service(self.param_dict["set_behavior_service_name"])
         rospy.loginfo("Waiting for navigation action service ...")
         self.nav_action_client.wait_for_server()
+        rospy.loginfo("All service are ready...")
 
     def setRobotState(self, new_state):
         rospy.loginfo("Switching robot state from {} to {}."
@@ -106,8 +107,10 @@ class MissionPlanner(object):
                 return False
 
             rospy.loginfo("{} object maybe detected. Checking.".format(color))
+            self.setBehavior("Tank", "stop", True)
             rospy.sleep(5)
             pose = self.getColorObjPose(color)
+            self.setBehavior("Tank", "drive", False)
             if pose is None:
                 rospy.loginfo("False alarm.")
                 return False
@@ -174,7 +177,7 @@ class MissionPlanner(object):
         self.nav_action_client.send_goal(goal)
 
     def sendReconfSignal(self, index, reconf_direction):
-        self.reconf_signal_pub[index].publish(reconf_direction)
+        self.reconf_signal_pub[index].publish("{}:{}".format(reconf_direction, index))
 
     def isReconfFinished(self):
         try:
@@ -245,6 +248,7 @@ class MissionPlanner(object):
                 elif state == GoalStatus.ACTIVE:
                     self.setBehavior("Tank", "drive", False)
                 else:
+                    self.setBehavior("Tank", "stop", True)
                     rospy.loginfo("Getting actionlib state {} when going to {} dock.".format(GoalStatus.to_string(state), self._current_color))
 
             if self.robot_state == RobotState.VisualServo:

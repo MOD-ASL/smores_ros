@@ -38,6 +38,10 @@ class Scorpion:
             angle_offset = 0
         return (cmd_angle + angle_offset) * pi / 180
 
+    def stop(self, c, param_dict = {}):
+        c.stop()
+        return 0.0
+
     def flat(self, c, para_val_dict = {}):
         """
         Flaten the scorpion

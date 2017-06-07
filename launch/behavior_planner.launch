@@ -1,0 +1,7 @@
+<launch>
+    <node name="SMORES_Behavior_Planner" pkg="smores_ros" type="behavior_planner_node.py" output="screen">
+        <param name="set_behavior_service_name" value="set_behavior" />
+        <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/python_behaviors" />
+        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
+    </node>
+</launch>

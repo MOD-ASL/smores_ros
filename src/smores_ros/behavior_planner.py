@@ -130,3 +130,6 @@ class BehaviorPlanner(object):
                 b = self.behaivor_dict[self.robot_configuration_name]
                 b.driveWithVW(self.c, self._current_cmd.linear.x,
                             self._current_cmd.angular.z)
+
+        b = self.behaivor_dict[self.robot_configuration_name]
+        b.stop(self.c)

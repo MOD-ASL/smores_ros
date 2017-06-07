@@ -97,7 +97,8 @@ class Tank:
         return self.drive(c, {"vel_l":vel_l, "vel_r":vel_r, "stand_angle":stand_angle, "tilt":tilt})
 
     def stop(self, c, param_dict = {}):
-        self.c.stopAll()
+        c.stop()
+        return 0.0
 
     def drive(self, c, para_val_dict = {"vel_l":30, "vel_r":30, "stand_angle":-45, "tilt":False}):
         """

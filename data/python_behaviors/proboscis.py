@@ -41,6 +41,10 @@ class Proboscis:
             angle_offset = 0
         return (cmd_angle + angle_offset) * pi / 180
 
+    def stop(self, c, param_dict = {}):
+        c.stop()
+        return 0.0
+
     def climbDownLedge(self, c, para_val_dict = {"vel_back":-80, "vel_prob":-30, "angle_1":80, "stand_angle":-25}):
         """
         Climb down a ledge
