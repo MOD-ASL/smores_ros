@@ -93,8 +93,10 @@ class BehaviorPlanner(object):
                     time.sleep(b.stop(self.c))
                 elif request.behavior_name == "climbUpBox":
                     time.sleep(b.climbUpLedge(self.c))
+                    time.sleep(b.stop(self.c))
                 elif request.behavior_name == "climbDownBox":
                     time.sleep(b.climbDownLedge(self.c))
+                    time.sleep(b.stop(self.c))
                 elif request.behavior_name == "drop":
                     time.sleep(b.dropItem(self.c))
 

@@ -24,11 +24,11 @@ class Proboscis:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "back_r":7,
+                               "back_r":11,
                                "back_l":22,
                                "back_m":5,
                                "prob_1":15,
-                               "prob_2":16,
+                               "prob_2":1,
                                "prob_3":23,
                                "prob_4":5,
                               } # module alias: module ID
@@ -70,64 +70,33 @@ class Proboscis:
         # back up, flat the third module
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", -para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", -para_val_dict["vel_back"])
             time.sleep(0.05)
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_back"])
             time.sleep(0.05)
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["prob_2"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel_prob"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel_prob"])
 
             module_ID = self.module_mapping["prob_3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel_prob"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel_prob"])
             time.sleep(0.05)
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0.0, module_ID, "tilt"), time_period)
-        time.sleep(time_period)
-
-        # back up more
-        for i in xrange(self._cmd_repeat_time):
-            module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", -para_val_dict["vel_back"], time_period)
-            time.sleep(0.05)
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
-
-            module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
-            time.sleep(0.05)
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
-
-            module_ID = self.module_mapping["prob_2"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
-            time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
-
-            module_ID = self.module_mapping["prob_3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
-            time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
         time.sleep(time_period)
 
         # back up, flat the second module
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_2"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
-            time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
-            time.sleep(0.05)
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
-
-            module_ID = self.module_mapping["prob_3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
 
         return time_period
 
@@ -167,17 +136,17 @@ class Proboscis:
 
         return time_period
 
-    def climbUpLedge(self, c, para_val_dict = {"vel_back":80, "vel_prob":30, "angle_1":80, "stand_angle":-25}):
+    def climbUpLedge(self, c, para_val_dict = {"vel_back":100, "vel_prob":40, "angle_1":80, "stand_angle":-25}):
         """
         Climb up a ledge
 
-        vel_back:   forward velocity for the two back modules (default=80)
-        vel_prob:   forward velocity for all front modules (default=30)
-        stand_angle:the tilt angle of two back modules (default=-25)
+        vel_back:   forward velocity for the two back modules
+        vel_prob:   forward velocity for all front modules
+        stand_angle:the tilt angle of two back modules
         angle_up:   the angle value for bending up
         """
 
-        time_period = 12
+        time_period = 13
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_1"]
@@ -185,52 +154,54 @@ class Proboscis:
 
             module_ID = self.module_mapping["prob_2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["angle_1"], module_ID, "tilt"), time_period)
+            time.sleep(0.05)
         time.sleep(time_period)
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["angle_1"], module_ID, "tilt"), time_period)
+            time.sleep(0.05)
         time.sleep(time_period)
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", -para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", -para_val_dict["vel_back"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_back"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["prob_3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel_prob"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel_prob"])
             time.sleep(0.05)
-        time.sleep(time_period*2)
+        time.sleep(time_period)
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", -para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", -para_val_dict["vel_back"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_back"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["prob_3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel_prob"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel_prob"])
             time.sleep(0.05)
-        time.sleep(time_period)
 
         return time_period
 
@@ -288,24 +259,24 @@ class Proboscis:
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_back"])
             time.sleep(0.05)
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_back"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_back"])
             time.sleep(0.05)
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["prob_1"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel_prob"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel_prob"])
 
             module_ID = self.module_mapping["prob_2"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel_prob"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel_prob"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel_prob"])
 
         return time_period
 

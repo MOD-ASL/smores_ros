@@ -57,55 +57,55 @@ class StairsClimber:
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc4"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
         time.sleep(time_period)
 
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stairs_height"], module_ID, "tilt"), time_period)
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc4"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
         return time_period
 
@@ -196,14 +196,14 @@ class StairsClimber:
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sc1"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
             module_ID = self.module_mapping["sc3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["vel"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
         return time_period
 

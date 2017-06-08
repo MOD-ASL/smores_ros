@@ -100,13 +100,13 @@ class SMORESReconfigurationController:
                 ]
                 }
 
-        self.up_angle = {23:10*pi/180.0, 15:10*pi/180.0, 16:15*pi/180}
-        self.neutral_angle = {23:0.0, 15:0.0, 16:5.0*pi/180}
-        self.tag_module_mapping = {"tag_4":16, "tag_5":23, "tag_6":15}
+        self.up_angle = {23:10*pi/180.0, 15:10*pi/180.0, 1:10*pi/180}
+        self.neutral_angle = {23:0.0, 15:0.0, 1:0.0*pi/180}
+        self.tag_module_mapping = {"tag_4":1, "tag_5":23, "tag_6":15}
         self.smores_list = self.tag_module_mapping.values()
 
         rospy.Subscriber('{}/reconf_signal'.format(rospy.get_name()), String, self._reconf_signal_callback)
-        rospy.on_shutdown(self.onShutdown)
+        #rospy.on_shutdown(self.onShutdown)
         self.reconf_path_data_path = os.path.join(rospkg.RosPack().get_path("smores_ros"), "data", "reconf_path.yaml")
         self.loadReconfPath()
 
@@ -398,13 +398,14 @@ class SMORESReconfigurationController:
         time.sleep(10)
         self.path = None
 
+        #self.onShutdown()
+
         rospy.logdebug("Reconfiguration Finished!")
         pub = rospy.Publisher("{}/reconf_status".format(rospy.get_name()), String, queue_size=10)
-        for i in xrange(10):
+        for i in xrange(100):
             pub.publish(String("{} is done.".format(self._current_waitlist_id)))
             rospy.sleep(0.1)
 
-        self.onShutdown()
 
     def onShutdown(self):
         rospy.loginfo("Shutting down {}".format(rospy.get_name()))

@@ -223,18 +223,18 @@ class MissionPlanner(object):
             rate.sleep()
             if self.robot_state == RobotState.DriveToDock:
                 # Try to read the color every 20 seconds to make sure we are still heading to it
-                if self._color_dock_time is None:
-                    self._color_dock_time = time.time()
-                if time.time() - self._color_dock_time > 20.0:
-                    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
-                    color_pose = self.getColorObjPose(self._current_color)
-                    if color_pose is None:
-                        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
-                        self._color_dock_time = time.time()
-                        continue
-                    dock_pose, self.reconf_type = self.getDockPose(color_pose)
-                    self.sendNavGoalRequest(dock_pose)
-                    self._color_dock_time = time.time()
+                #if self._color_dock_time is None:
+                #    self._color_dock_time = time.time()
+                #if time.time() - self._color_dock_time > 20.0:
+                #    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
+                #    color_pose = self.getColorObjPose(self._current_color)
+                #    if color_pose is None:
+                #        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
+                #        self._color_dock_time = time.time()
+                #        continue
+                #    dock_pose, self.reconf_type = self.getDockPose(color_pose)
+                #    self.sendNavGoalRequest(dock_pose)
+                #    self._color_dock_time = time.time()
 
                 state = self.nav_action_client.get_state()
                 if state == GoalStatus.SUCCEEDED:
@@ -303,6 +303,7 @@ class MissionPlanner(object):
                     self.setRobotState(RobotState.DropPink)
 
             if self.robot_state == RobotState.DropPink:
+                self.setBehavior("Proboscis", "stand", True)
                 self.setBehavior("Proboscis", "climbUpBox", True)
                 self.setBehavior("Proboscis", "drop", True)
                 self.setBehavior("Proboscis", "climbDownBox", True)

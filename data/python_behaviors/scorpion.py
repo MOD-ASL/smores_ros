@@ -150,15 +150,15 @@ class Scorpion:
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sL"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["left_V"]*3, time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["left_V"]*3)
 
             module_ID = self.module_mapping["sR"]
-            c.mods[module_ID].move.command_velocity("pan", -para_val_dict["right_V"]*3, time_period)
+            c.mods[module_ID].move.send_torque("pan", -para_val_dict["right_V"]*3)
 
             module_ID = self.module_mapping["s3"]
-            c.mods[module_ID].move.command_velocity("left", para_val_dict["left_V"], time_period)
+            c.mods[module_ID].move.send_torque("left", para_val_dict["left_V"])
             time.sleep(0.05)
-            c.mods[module_ID].move.command_velocity("right", -para_val_dict["right_V"], time_period)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["right_V"])
 
             time.sleep(0.05)
 
