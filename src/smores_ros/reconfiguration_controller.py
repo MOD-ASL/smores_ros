@@ -100,9 +100,9 @@ class SMORESReconfigurationController:
                 ]
                 }
 
-        self.up_angle = {23:10*pi/180.0, 15:10*pi/180.0, 14:10*pi/180}
-        self.neutral_angle = {23:0.0, 15:0.0, 14:0.0*pi/180}
-        self.tag_module_mapping = {"tag_4":14, "tag_5":23, "tag_6":15}
+        self.up_angle = {23:10*pi/180.0, 20:10*pi/180.0, 14:10*pi/180}
+        self.neutral_angle = {23:0.0, 20:0.0, 14:0.0*pi/180}
+        self.tag_module_mapping = {"tag_4":14, "tag_5":23, "tag_6":20}
         self.smores_list = self.tag_module_mapping.values()
 
         rospy.Subscriber('{}/reconf_signal'.format(rospy.get_name()), String, self._reconf_signal_callback)

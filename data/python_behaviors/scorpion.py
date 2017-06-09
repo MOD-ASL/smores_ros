@@ -23,11 +23,11 @@ class Scorpion:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "s1":23,
-                               "s2":7,
+                               "s2":13,
                                "s3":22,
-                               "s4":1,
-                               "sR":15,
-                               "sL":16,
+                               "s4":3,
+                               "sR":20,
+                               "sL":14,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -106,38 +106,13 @@ class Scorpion:
 
         return time_period
 
-    def forward(self, c, para_val_dict = {"vel":30, "arm_angle":40}):
-        """
-        Drive the scopion forward
+    def driveWithVW(self, c, v, w, arm_angle=40, stand_angle=20, tilt=False):
+        vel_l = v/0.2*50.0-w/0.4*20.0
+        vel_r = -v/0.2*50.0-w/0.4*20.0
 
-        vel:            forward velocity (default=30)
-        arm_angle:    the tilt angle of two arm modules to stand up (default=40)
-        """
+        return self.drive(c, {"left_V":vel_l, "right_V":vel_r, "arm_angle":arm_angle, "stand_angle":stand_angle, "tilt":tilt})
 
-        self.drive({"left_V":para_val_dict["vel"],"right_V":para_val_dict["vel"],"arm_angle":para_val_dict["arm_angle"]})
-
-    def turnLeft(self, c, para_val_dict = {"vel":50, "arm_angle":40}):
-        """
-        Turn the scopion left
-
-        vel:          turning velocity (default=30)
-        arm_angle:    the tilt angle of two arm modules to stand up (default=40)
-        """
-
-        return self.drive(c, {"left_V":-para_val_dict["vel"],"right_V":para_val_dict["vel"],"arm_angle":para_val_dict["arm_angle"]})
-
-
-    def turnRight(self, c, para_val_dict = {"vel":50, "arm_angle":40}):
-        """
-        Turn the scopion right
-
-        vel:          turning velocity (default=30)
-        arm_angle:    the tilt angle of two arm modules to stand up (default=40)
-        """
-
-        return self.drive(c, {"left_V":para_val_dict["vel"],"right_V":-para_val_dict["vel"],"arm_angle":para_val_dict["arm_angle"]})
-
-    def drive(self, c, para_val_dict = {"left_V":30, "right_V":30, "arm_angle":40}):
+    def drive(self, c, para_val_dict = {"left_V":30, "right_V":30, "arm_angle":40, "stand_angle":20, "tilt":False}):
         """
         Drive the scorpion
 
@@ -147,20 +122,41 @@ class Scorpion:
         """
         time_period = 2
 
-        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["sL"]
             c.mods[module_ID].move.send_torque("pan", para_val_dict["left_V"]*3)
 
             module_ID = self.module_mapping["sR"]
-            c.mods[module_ID].move.send_torque("pan", -para_val_dict["right_V"]*3)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["right_V"]*3)
 
             module_ID = self.module_mapping["s3"]
             c.mods[module_ID].move.send_torque("left", para_val_dict["left_V"])
             time.sleep(0.05)
-            c.mods[module_ID].move.send_torque("right", -para_val_dict["right_V"])
+            c.mods[module_ID].move.send_torque("right", para_val_dict["right_V"])
 
             time.sleep(0.05)
+
+        #if para_val_dict["tilt"]:
+        #    for i in xrange(self._cmd_repeat_time):
+        #        module_ID = self.module_mapping["s1"]
+        #        c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+
+        #        module_ID = self.module_mapping["s2"]
+        #        c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
+
+        #        module_ID = self.module_mapping["s3"]
+        #        c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
+
+        #        module_ID = self.module_mapping["s4"]
+        #        c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+
+        #        module_ID = self.module_mapping["sL"]
+        #        c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["arm_angle"], module_ID, "tilt"), time_period)
+
+        #        module_ID = self.module_mapping["sR"]
+        #        c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["arm_angle"], module_ID, "tilt"), time_period)
+        #        time.sleep(0.05)
+
 
         return time_period
 

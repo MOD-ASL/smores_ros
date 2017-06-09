@@ -18,10 +18,10 @@ class RobotState(Enum):
     Explore = 1
     DriveToDock = 2
     VisualServo = 3
-    ReconfigurationT2P = 4
+    ReconfigurationS2SC = 4
     DropPink = 5
     Done = 6
-    ReconfigurationP2T = 7
+    ReconfigurationSC2S = 7
 
 GoalStatus.to_string = classmethod(get_name_of_constant)
 
@@ -65,7 +65,7 @@ class MissionPlanner(object):
                                 "~set_behavior_service_name",
                                 "~drive_command_topic_name",
                                 ]
-        self.robot_state = RobotState.Idle
+        self.robot_state = RobotState.Explore
         self.tf = tf.TransformListener()
 
         self._getROSParam()
@@ -107,10 +107,10 @@ class MissionPlanner(object):
                 return False
 
             rospy.loginfo("{} object maybe detected. Checking.".format(color))
-            self.setBehavior("Tank", "stop", True)
+            self.setBehavior("Scorpion", "stop", True)
             rospy.sleep(5)
             pose = self.getColorObjPose(color)
-            self.setBehavior("Tank", "drive", False)
+            self.setBehavior("Scorpion", "drive", False)
             if pose is None:
                 rospy.loginfo("False alarm.")
                 return False
@@ -193,11 +193,11 @@ class MissionPlanner(object):
         data = Twist()
         if x < 15.:
             # Turn left
-            data.angular.z = 0.18
+            data.angular.z = 0.40
             self.cmd_vel_pub.publish(data)
         elif x > 25.:
             # Turn right
-            data.angular.z = -0.18
+            data.angular.z = -0.40
             self.cmd_vel_pub.publish(data)
 
     def _stopDriving(self):
@@ -223,19 +223,18 @@ class MissionPlanner(object):
             rate.sleep()
             if self.robot_state == RobotState.DriveToDock:
                 # Try to read the color every 20 seconds to make sure we are still heading to it
-                if self._color_dock_time is None:
-                    self._color_dock_time = time.time()
-                if self._color_dock_time != 0.0 and time.time() - self._color_dock_time > 10.0:
-                    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
-                    color_pose = self.getColorObjPose(self._current_color)
-                    if color_pose is None:
-                        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
-                        self._color_dock_time = time.time()
-                        continue
-                    dock_pose, self.reconf_type = self.getDockPose(color_pose)
-                    self.sendNavGoalRequest(dock_pose)
-                    #self._color_dock_time = time.time()
-                    self._color_dock_time = 0.0
+                #if self._color_dock_time is None:
+                #    self._color_dock_time = time.time()
+                #if time.time() - self._color_dock_time > 20.0:
+                #    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
+                #    color_pose = self.getColorObjPose(self._current_color)
+                #    if color_pose is None:
+                #        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
+                #        self._color_dock_time = time.time()
+                #        continue
+                #    dock_pose, self.reconf_type = self.getDockPose(color_pose)
+                #    self.sendNavGoalRequest(dock_pose)
+                #    self._color_dock_time = time.time()
 
                 state = self.nav_action_client.get_state()
                 if state == GoalStatus.SUCCEEDED:
@@ -247,7 +246,7 @@ class MissionPlanner(object):
                     if self._current_color == "pink":
                         self.setRobotState(RobotState.VisualServo)
                 elif state == GoalStatus.ACTIVE:
-                    self.setBehavior("Tank", "drive", False)
+                    self.setBehavior("Scorpion", "drive", False)
                 elif state == GoalStatus.ABORTED:
                     rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
                     color_pose = self.getColorObjPose(self._current_color)
@@ -257,11 +256,11 @@ class MissionPlanner(object):
                     dock_pose, self.reconf_type = self.getDockPose(color_pose)
                     self.sendNavGoalRequest(dock_pose)
                 else:
-                    self.setBehavior("Tank", "stop", True)
+                    self.setBehavior("Scorpion", "stop", True)
                     rospy.loginfo("Getting actionlib state {} when going to {} dock.".format(GoalStatus.to_string(state), self._current_color))
 
             if self.robot_state == RobotState.VisualServo:
-                self.setBehavior("Tank", "drive", False)
+                self.setBehavior("Scorpion", "drive", False)
                 try:
                     color = self._current_color
                     pose = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
@@ -280,7 +279,7 @@ class MissionPlanner(object):
                         self.doVisualServo(pose.x)
                     else:
                         rospy.loginfo("Finished visual servoing.")
-                        self.setBehavior("Tank", "stop", True)
+                        self.setBehavior("Scorpion", "stop", True)
                         self._stopDriving()
                         if self._current_color == "pink":
                             rospy.loginfo("Recheck heading.")
@@ -296,43 +295,45 @@ class MissionPlanner(object):
                                 continue
 
                             rospy.loginfo("Really finished visual servoing.")
-                            self.setBehavior("Tank", "stop", True)
-                            self.setRobotState(RobotState.ReconfigurationT2P)
+                            self.setBehavior("Scorpion", "stop", True)
+                            self.setRobotState(RobotState.ReconfigurationS2SC)
                             rospy.loginfo("Running pre-reconfiguration behavior.")
-                            self.setBehavior("Tank", "flat", True)
+                            self.setBehavior("Scorpion", "flat", True)
                             rospy.loginfo("Send reconfiguration signal.")
-                            self.sendReconfSignal(0, "T2P")
-                            self.sendReconfSignal(1, "T2P")
+                            self.sendReconfSignal(0, "S2SC")
+                            self.sendReconfSignal(1, "S2SC")
 
-            if self.robot_state == RobotState.ReconfigurationT2P:
+            if self.robot_state == RobotState.ReconfigurationS2SC:
                 if self.isReconfFinished():
                     # Finished reconfiguration
                     rospy.loginfo("Reconfiguration finished.")
-                    self.setBehavior("Proboscis", "", False)
+                    self.setBehavior("StairsClimber", "", False)
                     self.setRobotState(RobotState.DropPink)
 
             if self.robot_state == RobotState.DropPink:
-                self.setBehavior("Proboscis", "stand", True)
-                self.setBehavior("Proboscis", "climbUpBox", True)
-                self.setBehavior("Proboscis", "drop", True)
-                self.setBehavior("Proboscis", "climbDownBox", True)
+                self.setBehavior("StairsClimber", "stand", True)
+                for i in xrange(3):
+                    self.setBehavior("StairsClimber", "climbUpStairs", True)
+                self.setBehavior("StairsClimber", "drop", True)
+                for i in xrange(3):
+                    self.setBehavior("StairsClimber", "climbDownStairs", True)
 
-                self.setRobotState(RobotState.ReconfigurationP2T)
+                self.setRobotState(RobotState.ReconfigurationSC2S)
                 rospy.loginfo("Running pre-reconfiguration behavior.")
-                self.setBehavior("Proboscis", "flat", True)
+                self.setBehavior("StairsClimber", "flat", True)
                 rospy.loginfo("Send reconfiguration signal.")
-                self.sendReconfSignal(0, "P2T")
-                self.sendReconfSignal(1, "P2T")
+                self.sendReconfSignal(0, "SC2S")
+                self.sendReconfSignal(1, "SC2S")
 
             if self.robot_state == RobotState.Done:
                 rospy.logerr("What?! You are done!!? How come!!!? You shouldn't be here!")
 
-            if self.robot_state == RobotState.ReconfigurationP2T:
+            if self.robot_state == RobotState.ReconfigurationSC2S:
                 if self.isReconfFinished():
                     # Finished reconfiguration
                     rospy.loginfo("Reconfiguration finished.")
-                    self.setBehavior("Tank", "", False)
-                    self.setBehavior("Tank", "stand", True)
+                    self.setBehavior("Scorpion", "", False)
+                    self.setBehavior("Scorpion", "stand", True)
                     self.setRobotState(RobotState.Done)
 
             if (self.robot_state == RobotState.Explore):
@@ -343,7 +344,7 @@ class MissionPlanner(object):
                     rospy.loginfo("Getting {} docking pose.".format(self._current_color))
                     dock_pose, self.reconf_type = self.getDockPose(self.getColorObjPose(self._current_color))
                     self.sendNavGoalRequest(dock_pose)
-                    self.setBehavior("Tank", "drive", False)
+                    self.setBehavior("Scorpion", "drive", False)
                 else:
                     # Explore
                     state = self.nav_action_client.get_state()
@@ -367,4 +368,4 @@ class MissionPlanner(object):
                 self.setRobotState(RobotState.Explore)
                 nbv_pose = self.getNBVPose()
                 self.sendNavGoalRequest(nbv_pose)
-                self.setBehavior("Tank", "drive", False)
+                self.setBehavior("Scorpion", "drive", False)

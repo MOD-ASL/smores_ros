@@ -56,11 +56,11 @@ class BehaviorPlanner(object):
 
         self.behaivor_dict["Proboscis"] = Proboscis()
         self.behaivor_dict["Tank"] = Tank()
-        self.behaivor_dict["Stairsclimber"] = StairsClimber()
+        self.behaivor_dict["StairsClimber"] = StairsClimber()
         self.behaivor_dict["Scorpion"] = Scorpion()
 
         self.c = SmoresCluster.SmoresCluster(
-                self.behaivor_dict["Tank"].module_mapping.values())
+                self.behaivor_dict["Scorpion"].module_mapping.values())
 
     def handle_set_behavior(self, request):
         if request.configuration_name == "":
@@ -99,6 +99,14 @@ class BehaviorPlanner(object):
                     time.sleep(b.stop(self.c))
                 elif request.behavior_name == "drop":
                     time.sleep(b.dropItem(self.c))
+                elif request.behavior_name == "climbUpStairs":
+                    time.sleep(b.climbUpStairs(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "climbDownStairs":
+                    time.sleep(b.climbDownStairs(self.c))
+                    time.sleep(b.stop(self.c))
+                else:
+                    rospy.logwarn("Cannot find behavior {}".format(request.behavior_name))
 
                 rospy.loginfo("Finished behavior {}".format(request.behavior_name))
             else:

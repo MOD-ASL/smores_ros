@@ -22,9 +22,9 @@ class StairsClimber:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "sc1":23,
-                               "sc2":7,
+                               "sc2":13,
                                "sc3":22,
-                               "sc4":1,
+                               "sc4":3,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -44,6 +44,16 @@ class StairsClimber:
         """
         return self.climbUpStairs(c, {"vel":para_val_dict["vel"], "stairs_height":para_val_dict["stairs_height"]})
 
+    def run(self,c):
+        time.sleep(self.stand(c))
+        for i in xrange(3):
+            print i
+            time.sleep(self.climbUpStairs(c))
+        time.sleep(self.dropItem(c))
+        for i in xrange(3):
+            print i
+            time.sleep(self.climbDownStairs(c))
+
     def climbUpStairs(self, c, para_val_dict = {"vel":70, "stairs_height":70}):
         """
         Climb up stairs
@@ -51,7 +61,6 @@ class StairsClimber:
         vel:            forward velocity (default=60)
         stairs_height:  the height of the stairs (default=70)
         """
-
         time_period = 10
 
         c.allMagnets("on")
@@ -174,11 +183,12 @@ class StairsClimber:
         """
         Drop the carried item
         """
-        time_period = 1
+        time_period = 5
 
         for i in xrange(self._cmd_repeat_time):
             time.sleep(0.05)
             module_ID = self.module_mapping["sc1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
             c.mods[module_ID].mag.control("top","off")
 
         return time_period
