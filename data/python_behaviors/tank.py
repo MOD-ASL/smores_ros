@@ -28,7 +28,7 @@ class Tank:
                                "back_l":22,
                                "back_m":5,
                                "mid":5,
-                               "front_l":1,
+                               "front_l":14,
                                "front_m":23,
                                "front_r":15,
                               } # module alias: module ID
@@ -112,26 +112,26 @@ class Tank:
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_r"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_r"])
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["back_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_l"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_l"])
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["front_r"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_r"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_r"])
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["front_l"]
-            c.mods[module_ID].move.command_velocity("pan", para_val_dict["vel_l"], time_period)
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["vel_l"])
             if para_val_dict["tilt"]:
                 time.sleep(0.05)
                 c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)

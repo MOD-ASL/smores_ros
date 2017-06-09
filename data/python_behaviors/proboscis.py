@@ -28,7 +28,7 @@ class Proboscis:
                                "back_l":22,
                                "back_m":5,
                                "prob_1":15,
-                               "prob_2":1,
+                               "prob_2":14,
                                "prob_3":23,
                                "prob_4":5,
                               } # module alias: module ID

@@ -247,6 +247,14 @@ class MissionPlanner(object):
                         self.setRobotState(RobotState.VisualServo)
                 elif state == GoalStatus.ACTIVE:
                     self.setBehavior("Tank", "drive", False)
+                elif state == GoalStatus.ABORTED:
+                    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
+                    color_pose = self.getColorObjPose(self._current_color)
+                    if color_pose is None:
+                        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
+                        continue
+                    dock_pose, self.reconf_type = self.getDockPose(color_pose)
+                    self.sendNavGoalRequest(dock_pose)
                 else:
                     self.setBehavior("Tank", "stop", True)
                     rospy.loginfo("Getting actionlib state {} when going to {} dock.".format(GoalStatus.to_string(state), self._current_color))
