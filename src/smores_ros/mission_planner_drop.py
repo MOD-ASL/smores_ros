@@ -65,7 +65,7 @@ class MissionPlanner(object):
                                 "~set_behavior_service_name",
                                 "~drive_command_topic_name",
                                 ]
-        self.robot_state = RobotState.Explore
+        self.robot_state = RobotState.Idle
         self.tf = tf.TransformListener()
 
         self._getROSParam()
@@ -223,18 +223,19 @@ class MissionPlanner(object):
             rate.sleep()
             if self.robot_state == RobotState.DriveToDock:
                 # Try to read the color every 20 seconds to make sure we are still heading to it
-                #if self._color_dock_time is None:
-                #    self._color_dock_time = time.time()
-                #if time.time() - self._color_dock_time > 20.0:
-                #    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
-                #    color_pose = self.getColorObjPose(self._current_color)
-                #    if color_pose is None:
-                #        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
-                #        self._color_dock_time = time.time()
-                #        continue
-                #    dock_pose, self.reconf_type = self.getDockPose(color_pose)
-                #    self.sendNavGoalRequest(dock_pose)
-                #    self._color_dock_time = time.time()
+                if self._color_dock_time is None:
+                    self._color_dock_time = time.time()
+                if self._color_dock_time != 0.0 and time.time() - self._color_dock_time > 10.0:
+                    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
+                    color_pose = self.getColorObjPose(self._current_color)
+                    if color_pose is None:
+                        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
+                        self._color_dock_time = time.time()
+                        continue
+                    dock_pose, self.reconf_type = self.getDockPose(color_pose)
+                    self.sendNavGoalRequest(dock_pose)
+                    #self._color_dock_time = time.time()
+                    self._color_dock_time = 0.0
 
                 state = self.nav_action_client.get_state()
                 if state == GoalStatus.SUCCEEDED:
@@ -315,6 +316,7 @@ class MissionPlanner(object):
                 for i in xrange(3):
                     self.setBehavior("StairsClimber", "climbUpStairs", True)
                 self.setBehavior("StairsClimber", "drop", True)
+                time.sleep(5)
                 for i in xrange(3):
                     self.setBehavior("StairsClimber", "climbDownStairs", True)
 

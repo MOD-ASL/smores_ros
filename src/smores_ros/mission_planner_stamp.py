@@ -106,19 +106,29 @@ class MissionPlanner(object):
             if pose is None:
                 return False
 
-            rospy.loginfo("{} object maybe detected. Checking.".format(color))
+            rospy.loginfo("{} object maybe detected. Turning.".format(color))
+            #self.setBehavior("Tank", "stop", True)
+            while (color_obj.x < -100. or color_obj.x > 100.):
+                self.doVisualServo(color_obj.x)
+                color_obj = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
+                                                  Vector3, timeout=1.0)
+                rospy.loginfo("Current x value is {}.".format(color_obj.x))
+                time.sleep(0.05)
             self.setBehavior("Tank", "stop", True)
-            rospy.sleep(5)
+            rospy.sleep(10)
             pose = self.getColorObjPose(color)
-            self.setBehavior("Tank", "drive", False)
+            #self.setBehavior("Tank", "drive", False)
             if pose is None:
                 rospy.loginfo("False alarm.")
+                self.setBehavior("Tank", "drive", False)
                 return False
             else:
                 rospy.loginfo("{} object definitely detected.".format(color))
                 self.color_cache[color] = pose
+                self.setBehavior("Tank", "drive", False)
                 return True
         except (rospy.ROSException, AttributeError) as e:
+            rospy.logerr(e)
             return False
 
     def getColorObjPose(self, color, cached = False):
@@ -191,11 +201,11 @@ class MissionPlanner(object):
 
     def doVisualServo(self, x):
         data = Twist()
-        if x < 15.:
+        if x < 0.:
             # Turn left
             data.angular.z = 0.18
             self.cmd_vel_pub.publish(data)
-        elif x > 25.:
+        elif x > 20.:
             # Turn right
             data.angular.z = -0.18
             self.cmd_vel_pub.publish(data)
@@ -223,19 +233,19 @@ class MissionPlanner(object):
             rate.sleep()
             if self.robot_state == RobotState.DriveToDock:
                 # Try to read the color every 20 seconds to make sure we are still heading to it
-                if self._color_dock_time is None:
-                    self._color_dock_time = time.time()
-                if self._color_dock_time != 0.0 and time.time() - self._color_dock_time > 10.0:
-                    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
-                    color_pose = self.getColorObjPose(self._current_color)
-                    if color_pose is None:
-                        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
-                        self._color_dock_time = time.time()
-                        continue
-                    dock_pose, self.reconf_type = self.getDockPose(color_pose)
-                    self.sendNavGoalRequest(dock_pose)
-                    #self._color_dock_time = time.time()
-                    self._color_dock_time = 0.0
+                #if self._color_dock_time is None:
+                #    self._color_dock_time = time.time()
+                #if self._color_dock_time != 0.0 and time.time() - self._color_dock_time > 10.0:
+                #    rospy.loginfo("Getting an updated {} docking pose.".format(self._current_color))
+                #    color_pose = self.getColorObjPose(self._current_color)
+                #    if color_pose is None:
+                #        rospy.logwarn("Cannot find {} object. Continue".format(self._current_color))
+                #        self._color_dock_time = time.time()
+                #        continue
+                #    dock_pose, self.reconf_type = self.getDockPose(color_pose)
+                #    self.sendNavGoalRequest(dock_pose)
+                #    #self._color_dock_time = time.time()
+                #    self._color_dock_time = 0.0
 
                 state = self.nav_action_client.get_state()
                 if state == GoalStatus.SUCCEEDED:
@@ -276,7 +286,7 @@ class MissionPlanner(object):
 
                 if pose is not None:
                     rospy.loginfo("Current x value is {}.".format(pose.x))
-                    if pose.x < 15. or pose.x > 25.:
+                    if pose.x < 0. or pose.x > 20.:
                         self.doVisualServo(pose.x)
                     else:
                         rospy.loginfo("Finished visual servoing.")
@@ -288,7 +298,7 @@ class MissionPlanner(object):
                                 pose = rospy.wait_for_message(self.param_dict[color + "_obj_topic_name"],
                                                               Vector3, timeout=1.0)
                                 rospy.logdebug("Current x value is {}.".format(pose.x))
-                                if pose.x < 15. or pose.x > 25.:
+                                if pose.x < 0. or pose.x > 20.:
                                     continue
                             except rospy.ROSException:
                                 pose = None

@@ -100,9 +100,9 @@ class SMORESReconfigurationController:
                 ]
                 }
 
-        self.up_angle = {23:10*pi/180.0, 20:10*pi/180.0, 14:10*pi/180}
-        self.neutral_angle = {23:0.0, 20:0.0, 14:0.0*pi/180}
-        self.tag_module_mapping = {"tag_4":14, "tag_5":23, "tag_6":20}
+        self.up_angle = {23:10*pi/180.0, 20:10*pi/180.0, 22:10*pi/180}
+        self.neutral_angle = {23:0.0, 20:0.0, 22:0.0*pi/180}
+        self.tag_module_mapping = {"tag_4":22, "tag_5":23, "tag_6":20}
         self.smores_list = self.tag_module_mapping.values()
 
         rospy.Subscriber('{}/reconf_signal'.format(rospy.get_name()), String, self._reconf_signal_callback)
@@ -402,7 +402,7 @@ class SMORESReconfigurationController:
 
         rospy.logdebug("Reconfiguration Finished!")
         pub = rospy.Publisher("{}/reconf_status".format(rospy.get_name()), String, queue_size=10)
-        for i in xrange(100):
+        for i in xrange(200):
             pub.publish(String("{} is done.".format(self._current_waitlist_id)))
             rospy.sleep(0.1)
 

@@ -60,7 +60,7 @@ class BehaviorPlanner(object):
         self.behaivor_dict["Scorpion"] = Scorpion()
 
         self.c = SmoresCluster.SmoresCluster(
-                self.behaivor_dict["Scorpion"].module_mapping.values())
+                self.behaivor_dict["Tank"].module_mapping.values())
 
     def handle_set_behavior(self, request):
         if request.configuration_name == "":

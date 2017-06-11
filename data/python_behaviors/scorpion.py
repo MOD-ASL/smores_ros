@@ -23,7 +23,7 @@ class Scorpion:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "s1":23,
-                               "s2":13,
+                               "s2":1,
                                "s3":22,
                                "s4":3,
                                "sR":20,
@@ -62,7 +62,7 @@ class Scorpion:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["s4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            #c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["sL"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
@@ -95,7 +95,7 @@ class Scorpion:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["s4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            #c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["sL"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["arm_angle"], module_ID, "tilt"), time_period)
@@ -107,8 +107,8 @@ class Scorpion:
         return time_period
 
     def driveWithVW(self, c, v, w, arm_angle=40, stand_angle=20, tilt=False):
-        vel_l = v/0.2*50.0-w/0.4*20.0
-        vel_r = -v/0.2*50.0-w/0.4*20.0
+        vel_l = v/0.2*70.0-w/0.4*25.0
+        vel_r = -v/0.2*70.0-w/0.4*25.0
 
         return self.drive(c, {"left_V":vel_l, "right_V":vel_r, "arm_angle":arm_angle, "stand_angle":stand_angle, "tilt":tilt})
 

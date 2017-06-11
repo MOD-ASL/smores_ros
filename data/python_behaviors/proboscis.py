@@ -24,11 +24,11 @@ class Proboscis:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "back_r":11,
-                               "back_l":22,
+                               "back_r":1,
+                               "back_l":11,
                                "back_m":5,
-                               "prob_1":15,
-                               "prob_2":14,
+                               "prob_1":20,
+                               "prob_2":22,
                                "prob_3":23,
                                "prob_4":5,
                               } # module alias: module ID
@@ -148,6 +148,7 @@ class Proboscis:
 
         time_period = 13
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_1"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["angle_1"], module_ID, "tilt"), time_period)
@@ -157,12 +158,14 @@ class Proboscis:
             time.sleep(0.05)
         time.sleep(time_period)
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["angle_1"], module_ID, "tilt"), time_period)
             time.sleep(0.05)
         time.sleep(time_period)
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["back_r"]
             c.mods[module_ID].move.send_torque("pan", -para_val_dict["vel_back"])
@@ -181,6 +184,7 @@ class Proboscis:
             time.sleep(0.05)
         time.sleep(time_period)
 
+        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["prob_2"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)

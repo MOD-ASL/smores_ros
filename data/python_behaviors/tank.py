@@ -24,13 +24,13 @@ class Tank:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "back_r":11,
-                               "back_l":22,
+                               "back_r":1,
+                               "back_l":11,
                                "back_m":5,
                                "mid":5,
-                               "front_l":14,
+                               "front_l":22,
                                "front_m":23,
-                               "front_r":15,
+                               "front_r":20,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
