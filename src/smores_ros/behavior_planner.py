@@ -53,14 +53,18 @@ class BehaviorPlanner(object):
         from tank import Tank
         from stairsclimber import StairsClimber
         from scorpion import Scorpion
+        from arm import Arm
+        from shortsnake import ShortSnake
 
         self.behaivor_dict["Proboscis"] = Proboscis()
         self.behaivor_dict["Tank"] = Tank()
         self.behaivor_dict["StairsClimber"] = StairsClimber()
         self.behaivor_dict["Scorpion"] = Scorpion()
+        self.behaivor_dict["Arm"] = Arm()
+        self.behaivor_dict["ShortSnake"] = ShortSnake()
 
         self.c = SmoresCluster.SmoresCluster(
-                self.behaivor_dict["Tank"].module_mapping.values())
+                self.behaivor_dict["Arm"].module_mapping.values())
 
     def handle_set_behavior(self, request):
         if request.configuration_name == "":
@@ -105,6 +109,17 @@ class BehaviorPlanner(object):
                 elif request.behavior_name == "climbDownStairs":
                     time.sleep(b.climbDownStairs(self.c))
                     time.sleep(b.stop(self.c))
+                elif request.behavior_name == "pickUp":
+                    time.sleep(b.pickUp(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "dropRamp":
+                    time.sleep(b.dropRamp(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "pushSensor":
+                    time.sleep(b.pushSensor(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "forward":
+                    time.sleep(b.forward(self.c))
                 else:
                     rospy.logwarn("Cannot find behavior {}".format(request.behavior_name))
 
