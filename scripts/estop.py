@@ -16,26 +16,30 @@ repeat = 3
 while True:
     devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
     for device in devices:
-        if device.name.startswith("Jess Tech"):
+        #if device.name.startswith("Jess Tech"):
+        if device.name.startswith("Microsoft"):
             d = evdev.InputDevice(device.fn)
 
     if d is not None:
         try:
             for event in device.read_loop():
                 if event.value == 01:
-                    if event.code in [288, 289, 290, 291]:
+                    #if event.code in [288, 289, 290, 291]:
+                    if event.code in [304,305,307,308]:
                         print "STOP!"
                         for i in xrange(repeat):
                             c.stop()
                             time.sleep(0.05)
 
-                    elif event.code in [292, 293]:
+                    #elif event.code in [292, 293]:
+                    elif event.code in [310]:
                         print "Mag!"
                         for i in xrange(repeat):
                             c.allMagnets("on")
                             time.sleep(0.05)
 
-                    elif event.code in [294, 295]:
+                    #elif event.code in [294, 295]:
+                    elif event.code in [311]:
                         print "Reset!"
                         for i in xrange(repeat):
                             c.mux("move.command_position('tilt',0.0,4)")
@@ -45,7 +49,7 @@ while True:
                             c.stop()
                             time.sleep(0.05)
                     else:
-                        print "Not recognized"
+                        print "Not recognized {}".format(event.code)
         except:
             print "Replug the controller"
 
