@@ -41,11 +41,6 @@ class BehaviorPlanner(object):
         self.robot_behavior_type = RobotBehaviorType.Idle
 
         self._getROSParam()
-        # Setup service and subscriber
-        rospy.Service(self.param_dict["set_behavior_service_name"],
-                set_behavior, self.handle_set_behavior)
-        rospy.Subscriber(self.param_dict["drive_command_topic_name"],
-                Twist, self.getDriveCMD_cb, queue_size=1)
 
         sys.path.append(self.param_dict["data_file_directory"])
 
@@ -65,6 +60,12 @@ class BehaviorPlanner(object):
 
         self.c = SmoresCluster.SmoresCluster(
                 self.behaivor_dict["Arm"].module_mapping.values())
+
+        # Setup service and subscriber
+        rospy.Service(self.param_dict["set_behavior_service_name"],
+                set_behavior, self.handle_set_behavior)
+        rospy.Subscriber(self.param_dict["drive_command_topic_name"],
+                Twist, self.getDriveCMD_cb, queue_size=1)
 
     def handle_set_behavior(self, request):
         if request.configuration_name == "":
@@ -115,11 +116,40 @@ class BehaviorPlanner(object):
                 elif request.behavior_name == "dropRamp":
                     time.sleep(b.dropRamp(self.c))
                     time.sleep(b.stop(self.c))
+                elif request.behavior_name == "bend":
+                    time.sleep(b.bend(self.c))
+                    # No stop here
+                elif request.behavior_name == "spinCW":
+                    # No sleep here
+                    b.spin(self.c, {"direction":"cw"})
+                    # No stop here
+                elif request.behavior_name == "spinCCW":
+                    # No sleep here
+                    b.spin(self.c, {"direction":"ccw"})
+                    # No stop here
+                elif request.behavior_name == "adjustHeadTiltUP":
+                    # No sleep here
+                    b.adjustHeadTilt(self.c, {"direction":"up"})
+                    # No stop here
+                elif request.behavior_name == "adjustHeadTiltDOWN":
+                    # No sleep here
+                    b.adjustHeadTilt(self.c, {"direction":"down"})
+                    # No stop here
+                elif request.behavior_name == "openDrawer":
+                    time.sleep(b.openDrawer(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "preSpin":
+                    time.sleep(b.preSpin(self.c))
+                    time.sleep(b.stop(self.c))
                 elif request.behavior_name == "pushSensor":
                     time.sleep(b.pushSensor(self.c))
+                    # No stop here
+                elif request.behavior_name == "breakSensorBox":
+                    time.sleep(b.breakSensorBox(self.c))
                     time.sleep(b.stop(self.c))
                 elif request.behavior_name == "forward":
                     time.sleep(b.forward(self.c))
+                    # No stop here
                 else:
                     rospy.logwarn("Cannot find behavior {}".format(request.behavior_name))
 
@@ -155,6 +185,6 @@ class BehaviorPlanner(object):
                 b = self.behaivor_dict[self.robot_configuration_name]
                 b.driveWithVW(self.c, self._current_cmd.linear.x,
                             self._current_cmd.angular.z)
-
-        b = self.behaivor_dict[self.robot_configuration_name]
-        b.stop(self.c)
+        if self.robot_configuration_name != "":
+            b = self.behaivor_dict[self.robot_configuration_name]
+            b.stop(self.c)

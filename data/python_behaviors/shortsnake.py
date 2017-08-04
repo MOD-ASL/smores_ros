@@ -11,7 +11,7 @@ from SmoresModule import SmoresCluster
 """
 The configuration looks like:
 
-    ss3   ss2   ss1 --> Head
+    ss3   ss2(Reversed)   ss1 --> Head
 
 """
 
@@ -22,7 +22,7 @@ class ShortSnake:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "ss1":11,
-                               "ss2":20,
+                               "ss2":4,
                                "ss3":8,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
@@ -33,25 +33,6 @@ class ShortSnake:
         else:
             angle_offset = 0
         return (cmd_angle + angle_offset) * pi / 180
-
-    def climbDownStairs(self, c, para_val_dict = {"vel":-30, "stairs_height":60}):
-        """
-        Climb down stairs
-
-        vel:            backward velocity (default=-30)
-        stairs_height:  the height of the stairs (default=60)
-        """
-        return self.climbUpStairs(c, {"vel":para_val_dict["vel"], "stairs_height":para_val_dict["stairs_height"]})
-
-    def run(self,c):
-        time.sleep(self.stand(c))
-        for i in xrange(3):
-            print i
-            time.sleep(self.climbUpStairs(c))
-        time.sleep(self.dropItem(c))
-        for i in xrange(3):
-            print i
-            time.sleep(self.climbDownStairs(c))
 
     def climbUpStairs(self, c, para_val_dict = {"vel":60, "stairs_height":80}):
         """
@@ -105,10 +86,137 @@ class ShortSnake:
         return time_period
 
     def stop(self, c, param_dict = {}):
-        c.stop()
+        for i in xrange(self._cmd_repeat_time):
+            c.stop()
+            time.sleep(0.05)
         return 0.0
 
-    def stand(self, c, para_val_dict = {"stand_angle":70}):
+    def bend(self, c, para_val_dict = {"stand_angle":-70}):
+        """
+        Bend the middle module more
+
+        stand_angle:    the tilt angle of modules to stand up
+        """
+
+        time_period = 4
+
+        for i in xrange(self._cmd_repeat_time):
+            time.sleep(0.05)
+            module_ID = self.module_mapping["ss2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
+
+        return time_period
+
+    def preSpin(self, c, para_val_dict = {}):
+        """
+        Prepare the shortsnake before spin in place
+        """
+        time_period = 6
+
+        for i in xrange(self._cmd_repeat_time):
+            time.sleep(0.05)
+            # Bend the middle module up
+            module_ID = self.module_mapping["ss2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(40, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+            # Bend the last module flat
+            module_ID = self.module_mapping["ss3"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(10, module_ID, "tilt"), time_period)
+
+        time.sleep(time_period)
+
+        for i in xrange(self._cmd_repeat_time):
+            time.sleep(0.05)
+            # Bend the front module down and hopefully show the apriltag
+            module_ID = self.module_mapping["ss1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-40, module_ID, "tilt"), time_period)
+
+        return time_period
+
+    def spin(self, c, para_val_dict = {"direction":"cw"}):
+        """
+        Spin the shortsnake about the middle module
+
+        direction:  the direction of spinning
+        """
+        time_period = 2
+        c.allMagnets("on")
+
+        if para_val_dict["direction"] == "ccw":
+            for i in xrange(self._cmd_repeat_time):
+                # This module is reversed
+                module_ID = self.module_mapping["ss2"]
+                c.mods[module_ID].move.send_torque("left", -25)
+                time.sleep(0.05)
+                c.mods[module_ID].move.send_torque("right", -25)
+        elif para_val_dict["direction"] == "cw":
+            for i in xrange(self._cmd_repeat_time):
+                # This module is reversed
+                module_ID = self.module_mapping["ss2"]
+                c.mods[module_ID].move.send_torque("left", 25)
+                time.sleep(0.05)
+                c.mods[module_ID].move.send_torque("right", 25)
+
+        return time_period
+
+    def crazy(self, c):
+        for i in xrange(self._cmd_repeat_time):
+            # This module is reversed
+            module_ID = self.module_mapping["ss2"]
+            c.mods[module_ID].move.send_torque("left", 100)
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", -100)
+        time.sleep(0.2)
+        self.stop(c)
+
+    def adjustHeadTilt(self, c, para_val_dict = {"direction":"up"}):
+        """
+        Adjust the tilt angle of the first module to flat
+
+        direction:  the direction of the tilt movement
+        """
+        time_period = 2
+
+        if para_val_dict["direction"] == "up":
+            for i in xrange(self._cmd_repeat_time):
+                time.sleep(0.05)
+                # Lift the tilt up
+                module_ID = self.module_mapping["ss1"]
+                c.mods[module_ID].move.send_torque("tilt", 15)
+        elif para_val_dict["direction"] == "down":
+            for i in xrange(self._cmd_repeat_time):
+                time.sleep(0.05)
+                # Drop the tilt down
+                module_ID = self.module_mapping["ss1"]
+                c.mods[module_ID].move.send_torque("tilt", -15)
+
+        return time_period
+
+
+    def openDrawer(self, c, para_val_dict = {}):
+        """
+        Drive to open the drawer
+        """
+
+        time_period = 2
+
+        # Drive forward for a short time
+        self.forward(c, para_val_dict = {"vel":60, "stand_angle":50})
+        time.sleep(3)
+        # Fire up the magnets
+        for i in xrange(self._cmd_repeat_time):
+            c.allMagnets("on")
+        self.stop(c)
+
+        # Drive backward
+        self.forward(c, para_val_dict = {"vel":-60, "stand_angle":50})
+        time.sleep(5)
+        self.stop(c)
+
+        return time_period
+
+
+    def stand(self, c, para_val_dict = {"stand_angle":-30}):
         """
         Stand up the shortsnake
 
@@ -123,12 +231,15 @@ class ShortSnake:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["ss2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(para_val_dict["stand_angle"], module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["ss3"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(80, module_ID, "tilt"), time_period)
 
         return time_period
+
+    def backward(self, c, para_val_dict = {"vel":-50, "stand_angle":50}):
+        self.forward(c, para_val_dict)
 
     def forward(self, c, para_val_dict = {"vel":50, "stand_angle":50}):
         """
@@ -147,10 +258,11 @@ class ShortSnake:
             time.sleep(0.05)
             c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
 
+            # This module is reversed
             module_ID = self.module_mapping["ss2"]
-            c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])
+            c.mods[module_ID].move.send_torque("left", -para_val_dict["vel"])
             time.sleep(0.05)
-            c.mods[module_ID].move.send_torque("right", -para_val_dict["vel"])
+            c.mods[module_ID].move.send_torque("right", para_val_dict["vel"])
 
             module_ID = self.module_mapping["ss3"]
             c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])

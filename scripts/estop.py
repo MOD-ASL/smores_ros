@@ -24,13 +24,12 @@ while True:
 
     if d is not None:
         try:
-            for event in device.read_loop():
+            for event in d.read_loop():
                 if event.value == 01:
                     # When the button is lifted
                     # Change to match the right code
                     #if event.code in [288, 289, 290, 291]:
                     if event.code in [304,305,307,308]:
-                    if event.code in [288, 289, 290, 291]:
                         print "STOP!"
                         for i in xrange(repeat):
                             c.stop()

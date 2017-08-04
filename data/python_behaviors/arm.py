@@ -11,7 +11,7 @@ from SmoresModule import SmoresCluster
 """
 The configuration looks like:
                   aL
-                  a3 SensorBox a3  a2   a1 --> Head
+                  a4 SensorBox a3  a2(Reversed)   a1 --> Head
                   aR
 
 """
@@ -22,8 +22,8 @@ class Arm:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "a1":20,
-                               "a2":11,
+                               "a1":11,
+                               "a2":4,
                                "a3":8,
                                "a4":18,
                                "aR":13,
@@ -39,7 +39,9 @@ class Arm:
         return (cmd_angle + angle_offset) * pi / 180
 
     def stop(self, c, param_dict = {}):
-        c.stop()
+        for i in xrange(self._cmd_repeat_time):
+            c.stop()
+            time.sleep(0.05)
         return 0.0
 
     def dropRamp(self, c, param_dict = {}):
@@ -54,19 +56,25 @@ class Arm:
             c.mods[module_ID].mag.control("top","off")
             time.sleep(0.05)
 
-        # Back up slowly and tilt the front face up
+        # Tilt the front face up
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(60, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+
+        # Tilt the second module face up
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(45, module_ID, "tilt"), time_period)
             time.sleep(0.05)
 
         return time_period
 
-    def startClimb(self, c, param_dict = {}):
+    def breakSensorBox(self, c, param_dict = {}):
         """
-        Start to climbe a ramp
+        Break the connection with sensor box
         """
-        time_period = 4
+        time_period = 1
 
         # Turn off magnet to sensor module
         for i in xrange(self._cmd_repeat_time):
@@ -74,40 +82,24 @@ class Arm:
             c.mods[module_ID].mag.control("bottom","off")
             time.sleep(0.05)
 
-        # Make the first three modules to a car shape
-        c.allMagnets("on")
-        for i in xrange(self._cmd_repeat_time):
-            module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
-
-            module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-70, module_ID, "tilt"), time_period)
-
-            module_ID = self.module_mapping["a3"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
-            time.sleep(0.05)
-
         return time_period
 
-    def pushSensor(self, c):
+    def pushSensor(self, c, para_val_dict={}):
         """
         Push the sensor box
         """
-        time_period = 10
+        time_period = 5
 
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["aL"]
-            c.mods[module_ID].move.send_torque("pan", para_val_dict["left_V"]*3)
+            c.mods[module_ID].move.send_torque("pan", 90)
 
             module_ID = self.module_mapping["aR"]
-            c.mods[module_ID].move.send_torque("pan", para_val_dict["right_V"]*3)
-
-            module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.send_torque("left", para_val_dict["left_V"])
-            time.sleep(0.05)
-            c.mods[module_ID].move.send_torque("right", para_val_dict["right_V"])
+            c.mods[module_ID].move.send_torque("pan", -85)
 
             time.sleep(0.05)
+
+        return time_period
 
 
     def flat(self, c, para_val_dict = {}):
@@ -159,7 +151,7 @@ class Arm:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-40, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(35, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-20, module_ID, "tilt"), time_period)
@@ -200,9 +192,7 @@ class Arm:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-20, module_ID, "tilt"), 5)
             time.sleep(0.05)
         time.sleep(5)
-        for i in xrange(self._cmd_repeat_time):
-            c.stop()
-            time.sleep(0.05)
+        self.stop(c)
 
         c.allMagnets("on")
         time.sleep(0.05)
@@ -229,11 +219,11 @@ class Arm:
             module_ID = self.module_mapping["aR"]
             c.mods[module_ID].move.send_torque("pan", para_val_dict["right_V"]*3)
 
+            # This module is reversed
             module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.send_torque("left", para_val_dict["left_V"])
+            c.mods[module_ID].move.send_torque("left", para_val_dict["right_V"])
             time.sleep(0.05)
-            c.mods[module_ID].move.send_torque("right", para_val_dict["right_V"])
-
+            c.mods[module_ID].move.send_torque("right", para_val_dict["left_V"])
             time.sleep(0.05)
 
         #if para_val_dict["tilt"]:
