@@ -154,7 +154,7 @@ class Arm:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(35, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a3"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-20, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a4"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(20, module_ID, "tilt"), time_period)

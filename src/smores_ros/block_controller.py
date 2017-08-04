@@ -59,13 +59,19 @@ class BlockController(object):
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition("goal")
+                (move_pose, move_rot) = self.getTagPosition(move_tag, "tag_0_goal")
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(move_tag, e))
                 continue
 
-            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[2]
+            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
             rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
+            v, w = self.lineFollowController(move_pose[1], theta)
+            rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
+
+            vel_l = v/0.2*70.0-w/0.4*25.0
+            vel_r = -v/0.2*70.0-w/0.4*25.0
+            rospy.loginfo("Wheel Velocity is {:.4f} and {:.4f}".format(vel_l, -vel_r))
 
     def adjustAlignment(self):
         _last_direction = ""
@@ -199,51 +205,56 @@ class BlockController(object):
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition(t)
+                (move_pose, move_rot) = self.getTagPosition(self.first_tag,"tag_0_goal")
             except TypeError as e:
-                rospy.logerr("Cannot find position for {!r}: {}".format(t, e))
+                rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
                 continue
 
-            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[1]
-            rospy.loginfo("Pose is {:.4f} and {:.4f} and {}".format(move_pose[0], move_pose[1], theta))
+            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
+            rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
+            v, w = self.lineFollowController(move_pose[1], theta)
+            rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
 
-            if back_up_counter > 3:
-                # Backup
-                _last_drive = False
+            #if back_up_counter > 3:
+            #    # Backup
+            #    _last_drive = False
+            #    data = Twist()
+            #    data.linear.x = -0.1
+            #    self.cmd_vel_pub.publish(data)
+            #    time.sleep(3)
+            #    back_up_counter = 0
+
+            if move_pose[0] < -0.03:
+                # Drive to point
                 data = Twist()
-                data.linear.x = -0.1
+                data.angular.z = w
+                data.linear.x = v
                 self.cmd_vel_pub.publish(data)
-                time.sleep(3)
-                back_up_counter = 0
-
-            if move_pose[1] > 0.01 or move_pose[1] < -0.01:
-                if _last_drive:
-                    _last_drive = False
-                    if t == "tag_2":
-                        back_up_counter += 1
-                self.doVisualServo(move_pose[0], move_pose[1])
             else:
-                # Drive forward
-                _last_drive = True
-                data = Twist()
-                data.linear.x = 0.1
-                self.cmd_vel_pub.publish(data)
-                if t == "goal":
-                    dist = 0.0
-                    tol = 0.20
-                if t == "tag_2":
-                    dist = 0.03
-                    tol = 0.01
-                if abs(move_pose[0] - dist) <tol:
-                    if t == "goal":
-                        t = "tag_2"
-                    else:
+                # Arrived at good point
+
+                if theta > 0.01 or theta < -0.01:
+                    self.doVisualServo(move_pose[0], theta)
+                else:
+                    # Drive forward
+                    data = Twist()
+                    data.linear.x = 0.05
+                    self.cmd_vel_pub.publish(data)
+                    if move_pose[0] > -0.007:
                         rospy.logerr("Picking up")
-                        self.setBehavior("", "", False)
-                        self.setBehavior("Arm", "pickUp", True)
-                        time.sleep(5)
-                        self.setBehavior("", "", False)
-                        return
+                        #self.setBehavior("", "", False)
+                        #self.setBehavior("Arm", "pickUp", True)
+                        #time.sleep(5)
+                        #self.setBehavior("", "", False)
+                        break
+
+        data = Twist()
+        data.angular.z = 0.0
+        data.linear.x = 0.0
+        for i in xrange(10):
+            self.cmd_vel_pub.publish(data)
+            time.sleep(0.05)
+        self.setBehavior("Arm", "", False)
 
     def getTagPosition(self, tag_id):
         rospy.logdebug("Getting position for {!r}".format(tag_id))
@@ -253,6 +264,36 @@ class BlockController(object):
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                 rospy.logerr(e)
                 return None
+
+    def getTagPosition(self, move_tag_id, origin_tag_id):
+        rospy.logdebug("Getting position for {!r} wrt to {!r}".format(move_tag_id, origin_tag_id))
+        while not rospy.is_shutdown():
+            try:
+                return self.tf.lookupTransform(origin_tag_id, move_tag_id, rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+                rospy.logerr(e)
+                return None
+
+    def lineFollowController(self, d, theta):
+        """
+        A controller for following a line with a differential drive robot
+        Assuming the line is y=0
+        d: y coordinate of the robot  (meter)
+        theta: is heading of the robot wrt the line (radian)
+        """
+        v = 0.12
+        w = 0.0
+
+        # Gain of the controller
+        knob_distance_over_angle = 13.0
+        knob_w_over_v = 20.0
+        K_distance = knob_distance_over_angle/(knob_distance_over_angle + 1.0)
+        K_angle = 1.0/(knob_distance_over_angle + 1.0)
+
+        # Robot turning speed
+        w = -K_distance * d - K_angle * theta
+
+        return v, w * knob_w_over_v
 
     def setBehavior(self, configuration_name, behavior_name, is_action=False):
         try:
@@ -265,12 +306,12 @@ class BlockController(object):
 
     def doVisualServo(self, x, y):
         data = Twist()
-        if y > 0.01:
+        if y < -0.01:
             # Turn left
             rospy.logdebug("Turning left")
             data.angular.z = 0.3
             self.cmd_vel_pub.publish(data)
-        elif y < -0.01:
+        elif y > 0.01:
             # Turn right
             rospy.logdebug("Turning right")
             data.angular.z = -0.3
