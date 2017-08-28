@@ -22,8 +22,8 @@ class ShortSnake:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "ss1":11,
-                               "ss2":4,
-                               "ss3":8,
+                               "ss2":2,
+                               "ss3":21,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -117,11 +117,11 @@ class ShortSnake:
             time.sleep(0.05)
             # Bend the middle module up
             module_ID = self.module_mapping["ss2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(40, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(25, module_ID, "tilt"), time_period)
             time.sleep(0.05)
             # Bend the last module flat
             module_ID = self.module_mapping["ss3"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(10, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
         time.sleep(time_period)
 
@@ -129,33 +129,32 @@ class ShortSnake:
             time.sleep(0.05)
             # Bend the front module down and hopefully show the apriltag
             module_ID = self.module_mapping["ss1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-40, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-25, module_ID, "tilt"), time_period)
 
         return time_period
 
-    def spin(self, c, para_val_dict = {"direction":"cw"}):
+    def spin(self, c, para_val_dict = {"direction":"cw", "speed":20}):
         """
         Spin the shortsnake about the middle module
 
         direction:  the direction of spinning
         """
         time_period = 2
-        c.allMagnets("on")
 
         if para_val_dict["direction"] == "ccw":
             for i in xrange(self._cmd_repeat_time):
                 # This module is reversed
                 module_ID = self.module_mapping["ss2"]
-                c.mods[module_ID].move.send_torque("left", -25)
+                c.mods[module_ID].move.send_torque("left", -para_val_dict["speed"])
                 time.sleep(0.05)
-                c.mods[module_ID].move.send_torque("right", -25)
+                c.mods[module_ID].move.send_torque("right", -para_val_dict["speed"])
         elif para_val_dict["direction"] == "cw":
             for i in xrange(self._cmd_repeat_time):
                 # This module is reversed
                 module_ID = self.module_mapping["ss2"]
-                c.mods[module_ID].move.send_torque("left", 25)
+                c.mods[module_ID].move.send_torque("left", para_val_dict["speed"])
                 time.sleep(0.05)
-                c.mods[module_ID].move.send_torque("right", 25)
+                c.mods[module_ID].move.send_torque("right", para_val_dict["speed"])
 
         return time_period
 
@@ -202,10 +201,17 @@ class ShortSnake:
 
         # Drive forward for a short time
         self.forward(c, para_val_dict = {"vel":60, "stand_angle":50})
-        time.sleep(3)
+        time.sleep(4)
+
+        # Start to tilt up
+        module_ID = self.module_mapping["ss1"]
+        c.mods[module_ID].move.send_torque("tilt", 15)
         # Fire up the magnets
-        for i in xrange(self._cmd_repeat_time):
-            c.allMagnets("on")
+        for i in xrange(4):
+            time.sleep(1.0)
+            for i in xrange(self._cmd_repeat_time):
+                module_ID = self.module_mapping["ss1"]
+                c.mods[module_ID].mag.control("top", "on")
         self.stop(c)
 
         # Drive backward
@@ -251,7 +257,6 @@ class ShortSnake:
 
         time_period = 2
 
-        c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["ss1"]
             c.mods[module_ID].move.send_torque("left", para_val_dict["vel"])

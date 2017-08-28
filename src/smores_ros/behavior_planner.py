@@ -116,16 +116,30 @@ class BehaviorPlanner(object):
                 elif request.behavior_name == "dropRamp":
                     time.sleep(b.dropRamp(self.c))
                     time.sleep(b.stop(self.c))
+                elif request.behavior_name == "breakRamp":
+                    time.sleep(b.breakRamp(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "climbRamp":
+                    time.sleep(b.climbRamp(self.c))
+                    time.sleep(b.stop(self.c))
                 elif request.behavior_name == "bend":
                     time.sleep(b.bend(self.c))
                     # No stop here
-                elif request.behavior_name == "spinCW":
+                elif request.behavior_name == "spinCWF":
                     # No sleep here
-                    b.spin(self.c, {"direction":"cw"})
+                    b.spin(self.c, {"direction":"cw", "speed":20})
                     # No stop here
-                elif request.behavior_name == "spinCCW":
+                elif request.behavior_name == "spinCCWF":
                     # No sleep here
-                    b.spin(self.c, {"direction":"ccw"})
+                    b.spin(self.c, {"direction":"ccw", "speed":20})
+                    # No stop here
+                elif request.behavior_name == "spinCWS":
+                    # No sleep here
+                    b.spin(self.c, {"direction":"cw", "speed":15})
+                    # No stop here
+                elif request.behavior_name == "spinCCWS":
+                    # No sleep here
+                    b.spin(self.c, {"direction":"ccw", "speed":15})
                     # No stop here
                 elif request.behavior_name == "adjustHeadTiltUP":
                     # No sleep here

@@ -23,11 +23,11 @@ class Arm:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "a1":11,
-                               "a2":4,
-                               "a3":8,
+                               "a2":2,
+                               "a3":21,
                                "a4":18,
-                               "aR":13,
-                               "aL":7,
+                               "aR":1,
+                               "aL":6,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -60,6 +60,32 @@ class Arm:
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["a1"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+
+        # Tilt the second module face up
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(45, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+
+        return time_period
+
+    def breakRamp(self, c, param_dict = {}):
+        """
+        Break the ramp connection
+        """
+        time_period = 5
+
+        # Turn off first magnet
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a1"]
+            c.mods[module_ID].mag.control("top","off")
+            time.sleep(0.05)
+
+        # Tilt the front face up
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(70, module_ID, "tilt"), time_period)
             time.sleep(0.05)
 
         # Tilt the second module face up
@@ -200,6 +226,42 @@ class Arm:
         time.sleep(self.drive(c, {"left_V":-20, "right_V":20, "arm_angle":40, "stand_angle":20, "tilt":False}))
 
         return 0.0
+
+    def climbRamp(self, c, para_val_dict = {"speed":30}):
+        """
+        Climb the ramp
+        Go forward and bend the second and third module slowly
+        """
+        time_period = 12
+
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["aL"]
+            c.mods[module_ID].move.send_torque("pan", para_val_dict["speed"]*3)
+
+            module_ID = self.module_mapping["aR"]
+            c.mods[module_ID].move.send_torque("pan", -para_val_dict["speed"]*3)
+
+            module_ID = self.module_mapping["a1"]
+            c.mods[module_ID].move.send_torque("left", para_val_dict["speed"])
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["speed"])
+
+            # This module is reversed
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.send_torque("left", -para_val_dict["speed"])
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", para_val_dict["speed"])
+            time.sleep(0.05)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["a3"]
+            c.mods[module_ID].move.send_torque("left", para_val_dict["speed"])
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", -para_val_dict["speed"])
+            time.sleep(0.05)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(60, module_ID, "tilt"), time_period)
+
+        return time_period
 
 
     def drive(self, c, para_val_dict = {"left_V":30, "right_V":-30, "arm_angle":40, "stand_angle":20, "tilt":False}):

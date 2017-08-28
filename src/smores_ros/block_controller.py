@@ -73,7 +73,7 @@ class BlockController(object):
             vel_r = -v/0.2*70.0-w/0.4*25.0
             rospy.loginfo("Wheel Velocity is {:.4f} and {:.4f}".format(vel_l, -vel_r))
 
-    def adjustAlignment(self):
+    def adjustAlignment(self, highspeed=True):
         _last_direction = ""
         while not rospy.is_shutdown():
             self.rate.sleep()
@@ -89,23 +89,22 @@ class BlockController(object):
             if abs(abs(theta) - np.pi/2) < 0.01:
                 # We are at good alignment
                 self.setBehavior("ShortSnake", "stop", True)
-                self.adjustHeadTilt()
+                return True
             else:
                 # Need to adjust alignment
-                if abs(theta) > np.pi/2:
+                if abs(theta) < np.pi/2:
                     # Turn cw
-                    if _last_direction == "cw":
-                        continue
+                    if highspeed:
+                        self.setBehavior("ShortSnake", "spinCWF", True)
                     else:
-                        self.setBehavior("ShortSnake", "spinCW", True)
-                        _last_direction = "cw"
+                        self.setBehavior("ShortSnake", "spinCWS", True)
                 else:
                     # Turn ccw
-                    if _last_direction == "ccw":
-                        continue
+                    if highspeed:
+                        self.setBehavior("ShortSnake", "spinCCWF", True)
                     else:
-                        self.setBehavior("ShortSnake", "spinCCW", True)
-                        _last_direction = "ccw"
+                        self.setBehavior("ShortSnake", "spinCCWS", True)
+
 
     def adjustHeadTilt(self):
         _last_direction = ""
@@ -120,15 +119,13 @@ class BlockController(object):
             theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[2]
             rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
 
-            if abs(theta - 0.0) < 0.01:
+            if abs(theta - 0.1) < 0.01:
                 # We are at good tilt
                 self.setBehavior("ShortSnake", "stop", True)
-                self.setBehavior("ShortSnake", "openDrawer", True)
-                rospy.logerr("Done!")
-                sys.exit(0)
+                return True
             else:
                 # Need to adjust tilt
-                if theta > 0.0:
+                if theta < 0.1:
                     # Turn down
                     if _last_direction == "down":
                         continue
@@ -169,110 +166,140 @@ class BlockController(object):
         #time.sleep(8)
         ## Stop the sensor box
         #self.setBehavior("Arm", "stop", True)
-        ## Resume climbing
-        #self.setBehavior("ShortSnake", "", True)
-        #self.setBehavior("ShortSnake", "forward", True)
-        ## Now bend shortsnake more
-        #self.setBehavior("ShortSnake", "bend", True)
 
-        #while not rospy.is_shutdown():
-        #    self.rate.sleep()
-        #    try:
-        #        (move_pose, move_rot) = self.getTagPosition(self.middle_tag)
-        #    except TypeError as e:
-        #        rospy.logerr("Cannot find position for {!r}: {}".format(self.middle_tag, e))
-        #        continue
+        # Set configuration
+        self.setBehavior("Arm", "", True)
+        # Lift the front face
+        self.setBehavior("Arm", "breakRamp", True)
+        # Move forward
+        self.setBehavior("Arm", "climbRamp", True)
+        # Wait
+        time.sleep(1)
+        # Stop the sensor box
+        self.setBehavior("Arm", "stop", True)
+        # Break sensor box connection
+        self.setBehavior("Arm", "breakSensorBox", True)
+        # Stand up the shortsnake
+        self.setBehavior("ShortSnake", "", True)
+        self.setBehavior("ShortSnake", "stand", True)
+        time.sleep(1)
 
-        #    theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[1]
-        #    rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
+        # Resume climbing
+        self.setBehavior("ShortSnake", "", True)
+        self.setBehavior("ShortSnake", "forward", True)
+        time.sleep(6)
+        # Now bend shortsnake more
+        self.setBehavior("ShortSnake", "bend", True)
 
-        #    # Check if the car is in position or not
-        #    if move_pose[0] < -0.14:
-        #        self.setBehavior("ShortSnake", "stop", True)
-        #        rospy.loginfo("Arrived")
-
-        #        # Prepare to spin in place
-        #        self.setBehavior("ShortSnake", "preSpin", True)
-
-        #        # Spin until it is aligned with drawer
-        #        self.adjustAlignment()
-
-        self.setBehavior("Arm", "drive", False)
-
-        back_up_counter = 0
-        _last_drive = False
-        t = "goal"
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition(self.first_tag,"tag_0_goal")
+                (move_pose, move_rot) = self.getTagPosition(self.middle_tag)
             except TypeError as e:
-                rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
+                rospy.logerr("Cannot find position for {!r}: {}".format(self.middle_tag, e))
                 continue
 
-            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
+            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[1]
             rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
-            v, w = self.lineFollowController(move_pose[1], theta)
-            rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
 
-            #if back_up_counter > 3:
-            #    # Backup
-            #    _last_drive = False
-            #    data = Twist()
-            #    data.linear.x = -0.1
-            #    self.cmd_vel_pub.publish(data)
-            #    time.sleep(3)
-            #    back_up_counter = 0
+            # Check if the car is in position or not
+            if move_pose[0] < -0.15:
+                self.setBehavior("ShortSnake", "stop", True)
+                rospy.loginfo("Arrived")
 
-            if move_pose[0] < -0.03:
-                # Drive to point
-                data = Twist()
-                data.angular.z = w
-                data.linear.x = v
-                self.cmd_vel_pub.publish(data)
-            else:
-                # Arrived at good point
+                # Prepare to spin in place
+                self.setBehavior("ShortSnake", "preSpin", True)
 
-                if theta > 0.01 or theta < -0.01:
-                    self.doVisualServo(move_pose[0], theta)
+                # Spin until it is aligned with drawer
+                if self.adjustAlignment(highspeed = True):
+                    if self.adjustAlignment(highspeed = False):
+                        if self.adjustHeadTilt():
+                            self.setBehavior("ShortSnake", "openDrawer", True)
+                        else:
+                            rospy.logerr("Failed to adjust heading")
+                        return
+                    else:
+                        rospy.logerr("Failed to adjust alignment")
                 else:
-                    # Drive forward
-                    data = Twist()
-                    data.linear.x = 0.05
-                    self.cmd_vel_pub.publish(data)
-                    if move_pose[0] > -0.007:
-                        rospy.logerr("Picking up")
-                        #self.setBehavior("", "", False)
-                        #self.setBehavior("Arm", "pickUp", True)
-                        #time.sleep(5)
-                        #self.setBehavior("", "", False)
-                        break
+                    rospy.logerr("Failed to adjust alignment")
 
-        data = Twist()
-        data.angular.z = 0.0
-        data.linear.x = 0.0
-        for i in xrange(10):
-            self.cmd_vel_pub.publish(data)
-            time.sleep(0.05)
-        self.setBehavior("Arm", "", False)
+
+        #self.setBehavior("Arm", "drive", False)
+
+        #back_up_counter = 0
+        #_last_drive = False
+        #t = "goal"
+        #while not rospy.is_shutdown():
+        #    self.rate.sleep()
+        #    try:
+        #        (move_pose, move_rot) = self.getTagPosition(self.first_tag,"tag_0_goal")
+        #    except TypeError as e:
+        #        rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
+        #        continue
+
+        #    theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
+        #    rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
+        #    v, w = self.lineFollowController(move_pose[1], theta)
+        #    rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
+
+        #    #if back_up_counter > 3:
+        #    #    # Backup
+        #    #    _last_drive = False
+        #    #    data = Twist()
+        #    #    data.linear.x = -0.1
+        #    #    self.cmd_vel_pub.publish(data)
+        #    #    time.sleep(3)
+        #    #    back_up_counter = 0
+
+        #    if move_pose[0] < -0.03:
+        #        # Drive to point
+        #        data = Twist()
+        #        data.angular.z = w
+        #        data.linear.x = v
+        #        self.cmd_vel_pub.publish(data)
+        #    else:
+        #        # Arrived at good point
+
+        #        if theta > 0.01 or theta < -0.01:
+        #            self.doVisualServo(move_pose[0], theta)
+        #        else:
+        #            # Drive forward
+        #            data = Twist()
+        #            data.linear.x = 0.05
+        #            self.cmd_vel_pub.publish(data)
+        #            if move_pose[0] > -0.007:
+        #                rospy.logerr("Picking up")
+        #                #self.setBehavior("", "", False)
+        #                #self.setBehavior("Arm", "pickUp", True)
+        #                #time.sleep(5)
+        #                #self.setBehavior("", "", False)
+        #                break
+
+        #data = Twist()
+        #data.angular.z = 0.0
+        #data.linear.x = 0.0
+        #for i in xrange(10):
+        #    self.cmd_vel_pub.publish(data)
+        #    time.sleep(0.05)
+        #self.setBehavior("Arm", "", False)
 
     def getTagPosition(self, tag_id):
         rospy.logdebug("Getting position for {!r}".format(tag_id))
         while not rospy.is_shutdown():
             try:
-                return self.tf.lookupTransform("tag_5",tag_id, rospy.Time(0))
+                return self.tf.lookupTransform("tag_1",tag_id, rospy.Time(0))
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                 rospy.logerr(e)
                 return None
 
-    def getTagPosition(self, move_tag_id, origin_tag_id):
-        rospy.logdebug("Getting position for {!r} wrt to {!r}".format(move_tag_id, origin_tag_id))
-        while not rospy.is_shutdown():
-            try:
-                return self.tf.lookupTransform(origin_tag_id, move_tag_id, rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-                rospy.logerr(e)
-                return None
+    #def getTagPosition(self, move_tag_id, origin_tag_id):
+    #    rospy.logdebug("Getting position for {!r} wrt to {!r}".format(move_tag_id, origin_tag_id))
+    #    while not rospy.is_shutdown():
+    #        try:
+    #            return self.tf.lookupTransform(origin_tag_id, move_tag_id, rospy.Time(0))
+    #        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+    #            rospy.logerr(e)
+    #            return None
 
     def lineFollowController(self, d, theta):
         """
