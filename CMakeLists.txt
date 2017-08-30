@@ -13,6 +13,17 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib
   move_base_msgs
+  nav_msgs
+  roscpp
+  grid_map_core
+  grid_map_ros
+  grid_map_cv
+  grid_map_filters
+  grid_map_loader
+  grid_map_msgs
+  grid_map_octomap
+  grid_map_rviz_plugin
+  grid_map_visualization
 )
 
 ## System dependencies are found with CMake's conventions

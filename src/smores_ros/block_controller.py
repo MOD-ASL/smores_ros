@@ -6,7 +6,9 @@ import sys
 import numpy as np
 import operator
 from std_msgs.msg import Int32, String
-from geometry_msgs.msg import Vector3, Pose, Twist
+from geometry_msgs.msg import Vector3, Pose, Twist, PoseStamped
+from actionlib_msgs.msg import GoalStatusArray
+from nav_msgs.msg import Odometry
 from smores_ros.srv import set_behavior
 
 class BlockController(object):
@@ -19,6 +21,9 @@ class BlockController(object):
         self.first_tag = ""
         self.middle_tag = ""
         self.last_tag = ""
+        self.robot_pose = None
+        self.arrived = False
+        self.goal_rot = None
 
 
         self._initialize()
@@ -50,10 +55,29 @@ class BlockController(object):
             # Setup client, publishers and subscribers
             self.cmd_vel_pub = rospy.Publisher(
                     self.param_dict["drive_command_topic_name"], Twist, queue_size=1)
+            rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.navigation_goal_cb, queue_size=1)
+            rospy.Subscriber("/rtabmap/odom", Odometry, self.pose_cb, queue_size=1)
+            rospy.Subscriber("/move_base/status", GoalStatusArray, self.navigation_goal_status_cb, queue_size=1)
 
             # Waiting for all service to be ready
             rospy.loginfo("Waiting for set behavior service ...")
             rospy.wait_for_service(self.param_dict["set_behavior_service_name"])
+
+    def navigation_goal_cb(self, data):
+        # Find target yaw angle from msg
+        self.goal_rot = (data.pose.orientation.x,
+               data.pose.orientation.y,
+               data.pose.orientation.z,
+               data.pose.orientation.w)
+
+    def navigation_goal_status_cb(self, data):
+        if len(data.status_list) == 0:
+            self.arrived = False
+        else:
+            self.arrived = (data.status_list[-1].status == 3)
+
+    def pose_cb(self, pose):
+        self.robot_pose = pose
 
     def _test_apriltags(self):
         move_tag = "tag_1"
@@ -164,9 +188,27 @@ class BlockController(object):
 
         # Set start to free drive
         self.setBehavior("Arm", "drive", False)
-        cmd = raw_input("Press q to quit, any key to continue: ")
-        self.setBehavior("Arm", "stop", True)
-        if cmd == "q":
+
+        while not rospy.is_shutdown():
+            if (not self.arrived) or (self.goal_rot is None):
+                time.sleep(1)
+                continue
+
+            rospy.loginfo("Arrived ")
+            theta = tf.transformations.euler_from_quaternion(self.goal_rot, 'szyx')[0]
+            # Do visual servo
+            if self.adjustRobotYaw(theta):
+                self.goal_rot = None
+                self.arrived = False
+                # Stop
+                rospy.loginfo("Stop at good angle")
+                cmd = Twist()
+                self.cmd_vel_pub.publish(cmd)
+                self.cmd_vel_pub.publish(cmd)
+                self.cmd_vel_pub.publish(cmd)
+
+        cmd = raw_input("Continue?")
+        if cmd != "y":
             return
 
         # Set configuration
@@ -342,15 +384,47 @@ class BlockController(object):
         except rospy.ServiceException, e:
             rospy.logerr("Service call failed: {}".format(e))
 
-    def doVisualServo(self, x, y):
+    def adjustRobotYaw(self, target_rot):
+        r = rospy.Rate(10)
+
+        while not rospy.is_shutdown():
+            r.sleep()
+
+            cmd = Twist()
+            # Get robot rotation
+            pose = self.robot_pose
+
+            if not self.arrived:
+                self.cmd_vel_pub.publish(cmd)
+                return False
+            if pose is None:
+                self.cmd_vel_pub.publish(cmd)
+                continue
+
+            rot = (pose.pose.pose.orientation.x,
+                   pose.pose.pose.orientation.y,
+                   pose.pose.pose.orientation.z,
+                   pose.pose.pose.orientation.w)
+            theta = tf.transformations.euler_from_quaternion(rot, 'szyx')[0]
+            rospy.logdebug("Target angle {}. Current robot angle {}.".format(target_rot, theta))
+
+            if self.doVisualServo(None, theta, target_rot, 3.0/180*np.pi):
+                return True
+
+        return False
+
+    def doVisualServo(self, x, y, target_rot = 0.0, tol = 0.01):
         data = Twist()
-        if y < -0.01:
+        if y < target_rot - tol:
             # Turn left
             rospy.logdebug("Turning left")
             data.angular.z = 0.3
             self.cmd_vel_pub.publish(data)
-        elif y > 0.01:
+            return False
+        elif y > target_rot + tol:
             # Turn right
             rospy.logdebug("Turning right")
             data.angular.z = -0.3
             self.cmd_vel_pub.publish(data)
+            return False
+        return True
