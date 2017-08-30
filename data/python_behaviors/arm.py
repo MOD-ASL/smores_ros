@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from math import pi
+from numpy import sin, sign
 import sys
 import os
 import time
@@ -44,29 +45,26 @@ class Arm:
             time.sleep(0.05)
         return 0.0
 
-    def dropRamp(self, c, param_dict = {}):
+    def adjustHeadTilt(self, c, para_val_dict = {"direction":"up"}):
         """
-        Drop the ramp
+        Adjust the tilt angle of the first module to flat
+
+        direction:  the direction of the tilt movement
         """
-        time_period = 5
+        time_period = 2
 
-        # Turn off first magnet
-        for i in xrange(self._cmd_repeat_time):
-            module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].mag.control("top","off")
-            time.sleep(0.05)
-
-        # Tilt the front face up
-        for i in xrange(self._cmd_repeat_time):
-            module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
-            time.sleep(0.05)
-
-        # Tilt the second module face up
-        for i in xrange(self._cmd_repeat_time):
-            module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(45, module_ID, "tilt"), time_period)
-            time.sleep(0.05)
+        if para_val_dict["direction"] == "up":
+            for i in xrange(self._cmd_repeat_time):
+                time.sleep(0.05)
+                # Lift the tilt up
+                module_ID = self.module_mapping["a1"]
+                c.mods[module_ID].move.send_torque("tilt", 15)
+        elif para_val_dict["direction"] == "down":
+            for i in xrange(self._cmd_repeat_time):
+                time.sleep(0.05)
+                # Drop the tilt down
+                module_ID = self.module_mapping["a1"]
+                c.mods[module_ID].move.send_torque("tilt", -15)
 
         return time_period
 
@@ -177,7 +175,7 @@ class Arm:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-40, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(35, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(50, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
@@ -195,6 +193,14 @@ class Arm:
         return time_period
 
     def driveWithVW(self, c, v, w, arm_angle=40, stand_angle=20, tilt=False):
+        offset = 0.0
+        if w == 0.0:
+            pass
+        elif abs(w) < 0.3:
+            w = 0.3 * sign(w)
+            offset = 0.02 * sin(2*pi* time.time()) + 0.02
+            v = v + offset
+
         vel_l = v/0.2*70.0-w/0.4*25.0
         vel_r = -v/0.2*70.0-w/0.4*25.0
 
@@ -263,6 +269,12 @@ class Arm:
 
         return time_period
 
+    def forward(self, c, para_val_dict = {}):
+        """
+        Drive the arm forward
+        """
+        self.driveWithVW(c, 0.1, 0.0)
+        return 0.0
 
     def drive(self, c, para_val_dict = {"left_V":30, "right_V":-30, "arm_angle":40, "stand_angle":20, "tilt":False}):
         """

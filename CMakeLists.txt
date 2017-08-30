@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(smores_ros)
 
+add_compile_options(-std=c++11)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -120,8 +122,15 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
+
+find_package(PkgConfig REQUIRED)
+pkg_search_module(EIGEN REQUIRED eigen3)
+
+include_directories(${EIGEN_INCLUDE_DIRS})
+link_directories(${EIGEN_LIBRARY_DIRS})
 
 ## Declare a C++ library
 # add_library(smores_ros
@@ -135,6 +144,13 @@ include_directories(
 
 ## Declare a C++ executable
 # add_executable(smores_ros_node src/smores_ros_node.cpp)
+add_executable(gridDummyPub src/${PROJECT_NAME}/gridDummyPub.cpp)
+
+add_executable(
+  iterators_demo
+  src/iterators_demo_node.cpp
+  src/IteratorsDemo.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -144,6 +160,13 @@ include_directories(
 # target_link_libraries(smores_ros_node
 #   ${catkin_LIBRARIES}
 # )
+target_link_libraries(gridDummyPub
+    ${catkin_LIBRARIES}
+)
+
+target_link_libraries(iterators_demo
+    ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

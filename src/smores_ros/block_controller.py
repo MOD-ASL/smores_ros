@@ -4,6 +4,7 @@ import tf
 import time
 import sys
 import numpy as np
+import operator
 from std_msgs.msg import Int32, String
 from geometry_msgs.msg import Vector3, Pose, Twist
 from smores_ros.srv import set_behavior
@@ -55,30 +56,30 @@ class BlockController(object):
             rospy.wait_for_service(self.param_dict["set_behavior_service_name"])
 
     def _test_apriltags(self):
-        move_tag = self.first_tag
+        move_tag = "tag_1"
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition(move_tag, "tag_0_goal")
+                (move_pose, move_rot) = self.getTagPosition("tag_1", "usb_cam")
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(move_tag, e))
                 continue
 
-            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
-            rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
-            v, w = self.lineFollowController(move_pose[1], theta)
-            rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
+            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')
+            rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(theta[0],theta[1], theta[2]))
+            #v, w = self.lineFollowController(move_pose[1], theta)
+            #rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
 
-            vel_l = v/0.2*70.0-w/0.4*25.0
-            vel_r = -v/0.2*70.0-w/0.4*25.0
-            rospy.loginfo("Wheel Velocity is {:.4f} and {:.4f}".format(vel_l, -vel_r))
+            #vel_l = v/0.2*70.0-w/0.4*25.0
+            #vel_r = -v/0.2*70.0-w/0.4*25.0
+            #rospy.loginfo("Wheel Velocity is {:.4f} and {:.4f}".format(vel_l, -vel_r))
 
     def adjustAlignment(self, highspeed=True):
         _last_direction = ""
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition(self.last_tag)
+                (move_pose, move_rot) = self.getTagPosition(self.last_tag, "tag_1")
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(self.last_tag, e))
                 continue
@@ -105,40 +106,33 @@ class BlockController(object):
                     else:
                         self.setBehavior("ShortSnake", "spinCCWS", True)
 
-
-    def adjustHeadTilt(self):
+    def adjustHeadTilt(self, configuration_name, move_tag, target_tag, target_value, do_abs, comp_func):
         _last_direction = ""
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition(self.first_tag)
+                (move_pose, move_rot) = self.getTagPosition(move_tag, target_tag)
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
                 continue
 
             theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[2]
+            if do_abs:
+                theta = abs(theta)
             rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
 
-            if abs(theta - 0.1) < 0.01:
+            if abs(theta - target_value) < 0.01:
                 # We are at good tilt
-                self.setBehavior("ShortSnake", "stop", True)
+                self.setBehavior(configuration_name, "stop", True)
                 return True
             else:
                 # Need to adjust tilt
-                if theta < 0.1:
+                if comp_func(theta, target_value):
                     # Turn down
-                    if _last_direction == "down":
-                        continue
-                    else:
-                        self.setBehavior("ShortSnake", "adjustHeadTiltDOWN", True)
-                        _last_direction = "down"
+                    self.setBehavior(configuration_name, "adjustHeadTiltDOWN", True)
                 else:
                     # Turn up
-                    if _last_direction == "up":
-                        continue
-                    else:
-                        self.setBehavior("ShortSnake", "adjustHeadTiltUP", True)
-                        _last_direction = "up"
+                    self.setBehavior(configuration_name, "adjustHeadTiltUP", True)
 
     def main(self):
         if self.param_dict["test_apriltags"]:
@@ -167,11 +161,28 @@ class BlockController(object):
         ## Stop the sensor box
         #self.setBehavior("Arm", "stop", True)
 
+
+        # Set start to free drive
+        self.setBehavior("Arm", "drive", False)
+        cmd = raw_input("Press q to quit, any key to continue: ")
+        self.setBehavior("Arm", "stop", True)
+        if cmd == "q":
+            return
+
         # Set configuration
         self.setBehavior("Arm", "", True)
+        # Adjust ramp tilt
+        if self.adjustHeadTilt("Arm","tag_1", "usb_cam", 2.45, True, operator.gt):
+            pass
+        else:
+            rospy.logerr("Cannot adjust ramp tilt")
+        self.setBehavior("Arm", "forward", True)
+        time.sleep(9)
+        # Stop
+        self.setBehavior("Arm", "stop", True)
         # Lift the front face
         self.setBehavior("Arm", "breakRamp", True)
-        # Move forward
+        # Start to climb
         self.setBehavior("Arm", "climbRamp", True)
         # Wait
         time.sleep(1)
@@ -194,7 +205,7 @@ class BlockController(object):
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getTagPosition(self.middle_tag)
+                (move_pose, move_rot) = self.getTagPosition(self.middle_tag, "tag_1")
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(self.middle_tag, e))
                 continue
@@ -213,7 +224,7 @@ class BlockController(object):
                 # Spin until it is aligned with drawer
                 if self.adjustAlignment(highspeed = True):
                     if self.adjustAlignment(highspeed = False):
-                        if self.adjustHeadTilt():
+                        if self.adjustHeadTilt("ShortSnake",self.first_tag, "tag_1", 0.1, False, operator.lt):
                             self.setBehavior("ShortSnake", "openDrawer", True)
                         else:
                             rospy.logerr("Failed to adjust heading")
@@ -283,23 +294,23 @@ class BlockController(object):
         #    time.sleep(0.05)
         #self.setBehavior("Arm", "", False)
 
-    def getTagPosition(self, tag_id):
-        rospy.logdebug("Getting position for {!r}".format(tag_id))
-        while not rospy.is_shutdown():
-            try:
-                return self.tf.lookupTransform("tag_1",tag_id, rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-                rospy.logerr(e)
-                return None
-
-    #def getTagPosition(self, move_tag_id, origin_tag_id):
-    #    rospy.logdebug("Getting position for {!r} wrt to {!r}".format(move_tag_id, origin_tag_id))
+    #def getTagPosition(self, tag_id):
+    #    rospy.logdebug("Getting position for {!r}".format(tag_id))
     #    while not rospy.is_shutdown():
     #        try:
-    #            return self.tf.lookupTransform(origin_tag_id, move_tag_id, rospy.Time(0))
+    #            return self.tf.lookupTransform("tag_1",tag_id, rospy.Time(0))
     #        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
     #            rospy.logerr(e)
     #            return None
+
+    def getTagPosition(self, move_tag_id, origin_tag_id):
+        rospy.logdebug("Getting position for {!r} wrt to {!r}".format(move_tag_id, origin_tag_id))
+        while not rospy.is_shutdown():
+            try:
+                return self.tf.lookupTransform(origin_tag_id, move_tag_id, rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+                rospy.logerr(e)
+                return None
 
     def lineFollowController(self, d, theta):
         """
