@@ -28,7 +28,7 @@ class Arm:
                                "a2":2,
                                "a3":21,
                                "a4":18,
-                               "aR":1,
+                               "aR":7,
                                "aL":6,
                               } # module alias: module ID
         self._cmd_repeat_time = 3
@@ -173,10 +173,10 @@ class Arm:
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-40, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(50, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
@@ -211,7 +211,9 @@ class Arm:
         return self.drive(c, {"left_V":vel_l, "right_V":vel_r, "arm_angle":arm_angle, "stand_angle":stand_angle, "tilt":tilt})
 
     def pickUp(self, c, para_val_dict = {}):
+        ''' Pick up a ramp that is directly in front of the robot'''
 
+        # Set the angle of the head module
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["a1"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-65, module_ID, "tilt"), 5)
@@ -220,21 +222,37 @@ class Arm:
 
         c.allMagnets("on")
         time.sleep(0.05)
+
+        # Begin driving forward
         self.drive(c, {"left_V":20, "right_V":-20, "arm_angle":40, "stand_angle":20, "tilt":False})
-        for i in xrange(self._cmd_repeat_time):
-            c.allMagnets("on")
-            time.sleep(0.05)
-            module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-20, module_ID, "tilt"), 5)
-            time.sleep(0.05)
-        time.sleep(5)
+
+        # drive for 3 seconds to push the ramp a bit
+        time.sleep(3)
+
+        # Perform a slow upward sweep while firing the magnets repeatedly
+        # Start to tilt up
+        module_ID = self.module_mapping["a1"]
+        c.mods[module_ID].move.send_torque("tilt", 15)
+        # Fire the magnets four times
+        for i in xrange(8):
+            time.sleep(1.0)
+            for repeats in xrange(self._cmd_repeat_time):
+                module_ID = self.module_mapping["a1"]
+                c.mods[module_ID].mag.control("top", "on")
+            print(str(i))
+        # stop
         self.stop(c)
 
         c.allMagnets("on")
         time.sleep(0.05)
 
-        time.sleep(self.drive(c, {"left_V":-20, "right_V":20, "arm_angle":40, "stand_angle":20, "tilt":False}))
+        # tilt up
+        self.stand(c)
+        time.sleep(2)
 
+        # drive backwards
+        time.sleep(self.drive(c, {"left_V":-20, "right_V":20, "arm_angle":40, "stand_angle":20, "tilt":False}))
+        #
         return 0.0
 
     def climbRamp(self, c, para_val_dict = {"speed":30}):

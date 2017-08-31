@@ -6,6 +6,8 @@ from evdev import ecodes
 import sys
 # Change this to point towards the right location
 sys.path.append("/home/jim/Projects/Embedded/ecosystem/smores_build/smores_reconfig/python")
+sys.path.append("/home/tarik/Embedded/ecosystem/smores_build/smores_reconfig/python")
+#
 from SmoresModule.SmoresCluster import SmoresCluster
 import time
 # Create cluster and other required variables for the controller

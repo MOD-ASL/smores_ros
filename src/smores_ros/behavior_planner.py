@@ -67,7 +67,7 @@ class BehaviorPlanner(object):
         self.behaivor_dict["ShortSnake"] = ShortSnake()
 
         self.c = SmoresCluster.SmoresCluster(
-                self.behaivor_dict["Arm"].module_mapping.values())
+                self.behaivor_dict["Arm"].module_mapping.values(), batteries=False)
 
         # Setup service and subscriber
         rospy.Service(self.param_dict["set_behavior_service_name"],

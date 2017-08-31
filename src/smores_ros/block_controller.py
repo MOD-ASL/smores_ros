@@ -4,12 +4,27 @@ import tf
 import time
 import sys
 import numpy as np
+from math import pi
 import operator
 from std_msgs.msg import Int32, String
 from geometry_msgs.msg import Vector3, Pose, Twist, PoseStamped
 from actionlib_msgs.msg import GoalStatusArray
 from nav_msgs.msg import Odometry
 from smores_ros.srv import set_behavior
+''' below imports are for testing navigation to ramp: '''
+#import rospy
+import actionlib
+# import tf
+import time
+# import numpy as np
+from actionlib_msgs.msg import GoalStatus
+from actionlib.action_client import get_name_of_constant
+from smores_ros import action_client
+# from std_msgs.msg import Int32, String
+# from geometry_msgs.msg import Vector3, Pose, Twist
+from smores_ros.srv import nbv_request, target_req, set_behavior
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+import pdb
 
 class BlockController(object):
     def __init__(self):
@@ -27,6 +42,9 @@ class BlockController(object):
 
 
         self._initialize()
+        # Added for testing navigation to ramp:
+        self.nav_action_client = action_client.SimpleActionClient("move_base", MoveBaseAction)
+        #
         self.main()
 
     def _getROSParam(self):
@@ -185,10 +203,143 @@ class BlockController(object):
         ## Stop the sensor box
         #self.setBehavior("Arm", "stop", True)
 
+        ''' Code for exploring / aiming / dropping ramp '''
 
-        # Set start to free drive
+        # # Set start to free drive
+        # self.setBehavior("Arm", "drive", False)
+
+        # while not rospy.is_shutdown():
+        #     if (not self.arrived) or (self.goal_rot is None):
+        #         time.sleep(1)
+        #         continue
+
+        #     rospy.loginfo("Arrived ")
+        #     theta = tf.transformations.euler_from_quaternion(self.goal_rot, 'szyx')[0]
+        #     # Do visual servo
+        #     if self.adjustRobotYaw(theta):
+        #         self.goal_rot = None
+        #         self.arrived = False
+        #         # Stop
+        #         rospy.loginfo("Stop at good angle")
+        #         cmd = Twist()
+        #         self.cmd_vel_pub.publish(cmd)
+        #         self.cmd_vel_pub.publish(cmd)
+        #         self.cmd_vel_pub.publish(cmd)
+
+        # cmd = raw_input("Continue?")
+        # if cmd != "y":
+        #     return
+
+        # # Set configuration
+        # self.setBehavior("Arm", "", True)
+        # # Adjust ramp tilt
+        # if self.adjustHeadTilt("Arm","tag_1", "usb_cam", 2.45, True, operator.gt):
+        #     pass
+        # else:
+        #     rospy.logerr("Cannot adjust ramp tilt")
+        # self.setBehavior("Arm", "forward", True)
+        # time.sleep(9)
+        # # Stop
+        # self.setBehavior("Arm", "stop", True)
+        # # Lift the front face
+        # self.setBehavior("Arm", "breakRamp", True)
+        # # Start to climb
+        # self.setBehavior("Arm", "climbRamp", True)
+        # # Wait
+        # time.sleep(1)
+        # # Stop the sensor box
+        # self.setBehavior("Arm", "stop", True)
+        # # Break sensor box connection
+        # self.setBehavior("Arm", "breakSensorBox", True)
+        # # Stand up the shortsnake
+        # self.setBehavior("ShortSnake", "", True)
+        # self.setBehavior("ShortSnake", "stand", True)
+        # time.sleep(1)
+
+        # # Resume climbing
+        # self.setBehavior("ShortSnake", "", True)
+        # self.setBehavior("ShortSnake", "forward", True)
+        # time.sleep(6)
+        # # Now bend shortsnake more
+        # self.setBehavior("ShortSnake", "bend", True)
+
+        # while not rospy.is_shutdown():
+        #     self.rate.sleep()
+        #     try:
+        #         (move_pose, move_rot) = self.getTagPosition(self.middle_tag, "tag_1")
+        #     except TypeError as e:
+        #         rospy.logerr("Cannot find position for {!r}: {}".format(self.middle_tag, e))
+        #         continue
+
+        #     theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[1]
+        #     rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
+
+        #     # Check if the car is in position or not
+        #     if move_pose[0] < -0.15:
+        #         self.setBehavior("ShortSnake", "stop", True)
+        #         rospy.loginfo("Arrived")
+
+        #         # Prepare to spin in place
+        #         self.setBehavior("ShortSnake", "preSpin", True)
+
+        #         # Spin until it is aligned with drawer
+        #         if self.adjustAlignment(highspeed = True):
+        #             if self.adjustAlignment(highspeed = False):
+        #                 if self.adjustHeadTilt("ShortSnake",self.first_tag, "tag_1", 0.1, False, operator.lt):
+        #                     self.setBehavior("ShortSnake", "openDrawer", True)
+        #                 else:
+        #                     rospy.logerr("Failed to adjust heading")
+        #                 return
+        #             else:
+        #                 rospy.logerr("Failed to adjust alignment")
+        #         else:
+        #             rospy.logerr("Failed to adjust alignment")
+
+        ''' End explore/aim/drop ramp code ''' 
+
+        # Navigate to the ramp:
+        time.sleep(4.0) # to allow transforms to register
+        self.navigateToRamp()
+        # grab the ramp:
+        raw_input('enter to aquire ramp')
+        self.aquireRamp()
+    ''' End main '''
+
+    def navigateToRamp(self):
+        ''' Navigates to the ramp standoff point to begin ramp aquire controller.  This function is for testing, later call will be made by high level. '''
+
+        # get tf from map to ramp_nav_goal:
+        rospy.logerr('Navigating to ramp')
+        try:
+            (rng_pose, rng_rot) = self.getTagPosition("ramp_nav_goal","map")
+        except TypeError as e:
+            rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
+
+        theta = tf.transformations.euler_from_quaternion(rng_rot, 'szyx')[0]
+        z_quat = tf.transformations.quaternion_from_euler(theta,0,0, 'szyx')
+
+        # pack into a pose object:
+        goal_pose = Pose()
+        goal_pose.position.x = rng_pose[0]
+        goal_pose.position.y = rng_pose[1]
+        goal_pose.position.z = rng_pose[2]
+        goal_pose.orientation.x = z_quat[0]
+        goal_pose.orientation.y = z_quat[1]
+        goal_pose.orientation.z = z_quat[2]
+        goal_pose.orientation.w = z_quat[3]
+
+        # send nav goal request:
+        goal = MoveBaseGoal()
+        goal.target_pose.pose = goal_pose
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()
+        rospy.loginfo("Sending navigation goal request.")
+        self.nav_action_client.send_goal(goal)
+
+        # start driving:
         self.setBehavior("Arm", "drive", False)
 
+        # drive until goal reached, then ask to continue:
         while not rospy.is_shutdown():
             if (not self.arrived) or (self.goal_rot is None):
                 time.sleep(1)
@@ -207,139 +358,75 @@ class BlockController(object):
                 self.cmd_vel_pub.publish(cmd)
                 self.cmd_vel_pub.publish(cmd)
 
-        cmd = raw_input("Continue?")
-        if cmd != "y":
-            return
-
-        # Set configuration
-        self.setBehavior("Arm", "", True)
-        # Adjust ramp tilt
-        if self.adjustHeadTilt("Arm","tag_1", "usb_cam", 2.45, True, operator.gt):
-            pass
-        else:
-            rospy.logerr("Cannot adjust ramp tilt")
-        self.setBehavior("Arm", "forward", True)
-        time.sleep(9)
-        # Stop
-        self.setBehavior("Arm", "stop", True)
-        # Lift the front face
-        self.setBehavior("Arm", "breakRamp", True)
-        # Start to climb
-        self.setBehavior("Arm", "climbRamp", True)
-        # Wait
-        time.sleep(1)
-        # Stop the sensor box
-        self.setBehavior("Arm", "stop", True)
-        # Break sensor box connection
-        self.setBehavior("Arm", "breakSensorBox", True)
-        # Stand up the shortsnake
-        self.setBehavior("ShortSnake", "", True)
-        self.setBehavior("ShortSnake", "stand", True)
-        time.sleep(1)
-
-        # Resume climbing
-        self.setBehavior("ShortSnake", "", True)
-        self.setBehavior("ShortSnake", "forward", True)
-        time.sleep(6)
-        # Now bend shortsnake more
-        self.setBehavior("ShortSnake", "bend", True)
-
-        while not rospy.is_shutdown():
-            self.rate.sleep()
-            try:
-                (move_pose, move_rot) = self.getTagPosition(self.middle_tag, "tag_1")
-            except TypeError as e:
-                rospy.logerr("Cannot find position for {!r}: {}".format(self.middle_tag, e))
-                continue
-
-            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[1]
-            rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
-
-            # Check if the car is in position or not
-            if move_pose[0] < -0.15:
-                self.setBehavior("ShortSnake", "stop", True)
-                rospy.loginfo("Arrived")
-
-                # Prepare to spin in place
-                self.setBehavior("ShortSnake", "preSpin", True)
-
-                # Spin until it is aligned with drawer
-                if self.adjustAlignment(highspeed = True):
-                    if self.adjustAlignment(highspeed = False):
-                        if self.adjustHeadTilt("ShortSnake",self.first_tag, "tag_1", 0.1, False, operator.lt):
-                            self.setBehavior("ShortSnake", "openDrawer", True)
-                        else:
-                            rospy.logerr("Failed to adjust heading")
-                        return
-                    else:
-                        rospy.logerr("Failed to adjust alignment")
-                else:
-                    rospy.logerr("Failed to adjust alignment")
-
-
-
+    def aquireRamp(self):
         ''' This part is for block grabbing '''
 
-        #self.setBehavior("Arm", "drive", False)
+        self.setBehavior("Arm", "drive", False)
 
-        #back_up_counter = 0
-        #_last_drive = False
-        #t = "goal"
-        #while not rospy.is_shutdown():
-        #    self.rate.sleep()
-        #    try:
-        #        (move_pose, move_rot) = self.getTagPosition(self.first_tag,"tag_0_goal")
-        #    except TypeError as e:
-        #        rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
-        #        continue
+        back_up_counter = 0
+        _last_drive = False
+        t = "goal"
+        while not rospy.is_shutdown():
+           self.rate.sleep()
+           try:
+               (move_pose, move_rot) = self.getTagPosition(self.first_tag,"tag_0_goal")
+           except TypeError as e:
+               rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
+               continue
 
-        #    theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
-        #    rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
-        #    v, w = self.lineFollowController(move_pose[1], theta)
-        #    rospy.loginfo("Velocity is {:.4f} and {:.4f}".format(v, w))
+           theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
+           rospy.loginfo("Pose is x: {:.4f}, y: {:.4f}, theta: {:.4f}".format(move_pose[0], move_pose[1], theta*180/pi))
+           v, w = self.lineFollowController(move_pose[1], theta)
+           rospy.loginfo("Velocity is v: {:.4f}, w: {:.4f}".format(v, w))
 
-        #    #if back_up_counter > 3:
-        #    #    # Backup
-        #    #    _last_drive = False
-        #    #    data = Twist()
-        #    #    data.linear.x = -0.1
-        #    #    self.cmd_vel_pub.publish(data)
-        #    #    time.sleep(3)
-        #    #    back_up_counter = 0
+           # if back_up_counter > 3:
+           #    # Backup
+           #    _last_drive = False
+           #    data = Twist()
+           #    data.linear.x = -0.1
+           #    self.cmd_vel_pub.publish(data)
+           #    time.sleep(3)
+           #    back_up_counter = 0
 
-        #    if move_pose[0] < -0.03:
-        #        # Drive to point
-        #        data = Twist()
-        #        data.angular.z = w
-        #        data.linear.x = v
-        #        self.cmd_vel_pub.publish(data)
-        #    else:
-        #        # Arrived at good point
+           if move_pose[0] < -0.025:  # drive until close enogh to block
+               # Drive to point
+               data = Twist()
+               data.angular.z = w
+               data.linear.x = v
+               self.cmd_vel_pub.publish(data)
+           else:
+               rospy.logerr("Visual servoing")
+               # visual servo to pick up block
+               threshold_degrees = 0.5
+               if theta > (threshold_degrees*pi/180) or theta < -(threshold_degrees*pi/180):
+                   self.doVisualServo(move_pose[0], theta)
+               else:
+                   #if move_pose[0] > -0.007:
+                   rospy.logerr("stopping.")
+                   data = Twist()
+                   data.angular.z = 0.0
+                   data.linear.x = 0.0
+                   for i in xrange(10):
+                       self.cmd_vel_pub.publish(data)
+                       time.sleep(0.05)
+                   #self.setBehavior("Arm", "stop", True)
+                   # Execute the pickup behavior:
+                   rospy.logerr("Picking up")
+                   time.sleep(1)
+                   self.setBehavior("", "", False)
+                   self.setBehavior("Arm", "pickUp", True)
+                   time.sleep(5)
+                   self.setBehavior("", "", False)
+                   break
 
-        #        if theta > 0.01 or theta < -0.01:
-        #            self.doVisualServo(move_pose[0], theta)
-        #        else:
-        #            # Drive forward
-        #            data = Twist()
-        #            data.linear.x = 0.05
-        #            self.cmd_vel_pub.publish(data)
-        #            if move_pose[0] > -0.007:
-        #                rospy.logerr("Picking up")
-        #                #self.setBehavior("", "", False)
-        #                #self.setBehavior("Arm", "pickUp", True)
-        #                #time.sleep(5)
-        #                #self.setBehavior("", "", False)
-        #                break
-
-        #data = Twist()
-        #data.angular.z = 0.0
-        #data.linear.x = 0.0
-        #for i in xrange(10):
-        #    self.cmd_vel_pub.publish(data)
-        #    time.sleep(0.05)
-        #self.setBehavior("Arm", "", False)
-
-        ''' End of block grabbing controller '''
+        data = Twist()
+        data.angular.z = 0.0
+        data.linear.x = 0.0
+        for i in xrange(10):
+           self.cmd_vel_pub.publish(data)
+           time.sleep(0.05)
+        self.setBehavior("Arm", "", False)
+        ''' End of ramp grabbing controller '''
 
     #def getTagPosition(self, tag_id):
     #    rospy.logdebug("Getting position for {!r}".format(tag_id))
@@ -370,8 +457,10 @@ class BlockController(object):
         w = 0.0
 
         # Gain of the controller
-        knob_distance_over_angle = 13.0
-        knob_w_over_v = 20.0
+        # knob_distance_over_angle = 13.0  # from beginning of august
+        knob_distance_over_angle = 20.0  
+        #knob_w_over_v = 20.0 # from beginning of august
+        knob_w_over_v = 25.0
         K_distance = knob_distance_over_angle/(knob_distance_over_angle + 1.0)
         K_angle = 1.0/(knob_distance_over_angle + 1.0)
 

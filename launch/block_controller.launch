@@ -4,6 +4,7 @@
     <node pkg="tf" type="static_transform_publisher" name="tag_0_goal" args="-0.1 0.0 0.0 0.0 0.785398 0.0 tag_0 tag_0_goal 1000"/>
     <node pkg="tf" type="static_transform_publisher" name="tag_1_goal" args="-0.05 0.0 -0.08 0.0 0.0 0.0 tag_1 tag_1_goal 1000"/>
     <node pkg="tf" type="static_transform_publisher" name="tag_2_goal" args="-0.1 0.0 0.0 0.0 0.785398 0.0 tag_2 tag_2_goal 1000"/>
+    <node pkg="tf" type="static_transform_publisher" name="ramp_nav_goal" args="-0.3 0.0 0.0 0.0 0.0 0.0 tag_0_goal ramp_nav_goal 1000"/>
     <include file="$(find smores_ros)/launch/behavior_planner.launch" />
 
     <node name="SMORES_Block_Controller" pkg="smores_ros" type="block_controller_node.py" output="screen">
