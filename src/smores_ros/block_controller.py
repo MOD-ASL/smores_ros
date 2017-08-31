@@ -277,6 +277,9 @@ class BlockController(object):
                     rospy.logerr("Failed to adjust alignment")
 
 
+
+        ''' This part is for block grabbing '''
+
         #self.setBehavior("Arm", "drive", False)
 
         #back_up_counter = 0
@@ -335,6 +338,8 @@ class BlockController(object):
         #    self.cmd_vel_pub.publish(data)
         #    time.sleep(0.05)
         #self.setBehavior("Arm", "", False)
+
+        ''' End of block grabbing controller '''
 
     #def getTagPosition(self, tag_id):
     #    rospy.logdebug("Getting position for {!r}".format(tag_id))
@@ -418,13 +423,13 @@ class BlockController(object):
         if y < target_rot - tol:
             # Turn left
             rospy.logdebug("Turning left")
-            data.angular.z = 0.3
+            data.angular.z = 0.35
             self.cmd_vel_pub.publish(data)
             return False
         elif y > target_rot + tol:
             # Turn right
             rospy.logdebug("Turning right")
-            data.angular.z = -0.3
+            data.angular.z = -0.35
             self.cmd_vel_pub.publish(data)
             return False
         return True

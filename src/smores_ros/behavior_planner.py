@@ -4,10 +4,18 @@ import time
 from aenum import Enum
 import sys, os
 sys.path.insert(0,"/home/{}/Projects/Embedded/ecosystem/smores_build/smores_reconfig/python/".format(os.environ['USER']))
+sys.path.insert(0,'/home/tarik/Embedded/ecosystem/smores_build/smores_reconfig/python')
 
 import rospy
 from geometry_msgs.msg import Twist
-from smores_library.SmoresModule import SmoresCluster
+try:
+    from smores_library.SmoresModule import SmoresCluster
+except:
+    pass
+try:
+    from SmoresModule import SmoresCluster
+except:
+    pass
 from smores_ros.srv import set_behavior
 
 

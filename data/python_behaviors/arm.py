@@ -6,6 +6,7 @@ import os
 import time
 #Add smores library
 sys.path.insert(0,"/home/{}/Projects/Embedded/ecosystem/smores_build/smores_reconfig/python/".format(os.environ['USER']))
+sys.path.insert(0,"/home/{}/Embedded/ecosystem/smores_build/smores_reconfig/python/".format(os.environ['USER']))
 from SmoresModule import SmoresCluster
 
 
@@ -194,11 +195,14 @@ class Arm:
 
     def driveWithVW(self, c, v, w, arm_angle=40, stand_angle=20, tilt=False):
         offset = 0.0
+        #
+        minimum_w = 0.35
+        wiggle_amplitude = 0.02
         if w == 0.0:
             pass
-        elif abs(w) < 0.3:
-            w = 0.3 * sign(w)
-            offset = 0.02 * sin(2*pi* time.time()) + 0.02
+        elif abs(w) <= minimum_w:
+            w = minimum_w * sign(w)
+            offset =  wiggle_amplitude* sin(2*pi* time.time()) + wiggle_amplitude
             v = v + offset
 
         vel_l = v/0.2*70.0-w/0.4*25.0
