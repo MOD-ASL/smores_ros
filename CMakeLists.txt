@@ -73,6 +73,8 @@ catkin_python_setup()
    target_req.srv
    set_behavior.srv
    reconf_request.srv
+   region_req.srv
+   character_req.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -178,6 +180,9 @@ target_link_libraries(gridDummyPub
 target_link_libraries(iterators_demo
     ${catkin_LIBRARIES}
 )
+
+add_executable(listener src/listener.cpp)
+target_link_libraries(listener ${catkin_LIBRARIES})
 
 #############
 ## Install ##
