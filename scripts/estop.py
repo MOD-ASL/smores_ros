@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#/usr/bin/env python
 
 import evdev
 from evdev import ecodes
@@ -11,7 +11,7 @@ sys.path.append("/home/tarik/Embedded/ecosystem/smores_build/smores_reconfig/pyt
 from SmoresModule.SmoresCluster import SmoresCluster
 import time
 # Create cluster and other required variables for the controller
-c = SmoresCluster(range(1,27))
+c = SmoresCluster(range(1,27),batteries=False)
 d = None
 repeat = 3
 
