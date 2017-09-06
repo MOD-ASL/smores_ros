@@ -183,6 +183,8 @@ class BlockController(object):
         if rospy.is_shutdown():
             return
 
+        self.practiceDrive()
+
         ## Set configuration
         #self.setBehavior("Arm", "", True)
         ## Lift the front face
@@ -295,7 +297,7 @@ class BlockController(object):
         #         else:
         #             rospy.logerr("Failed to adjust alignment")
 
-        ''' End explore/aim/drop ramp code ''' 
+        ''' End explore/aim/drop ramp code '''
 
         # Navigate to the ramp:
         time.sleep(4.0) # to allow transforms to register
@@ -304,6 +306,30 @@ class BlockController(object):
         raw_input('enter to aquire ramp')
         self.aquireRamp()
     ''' End main '''
+
+
+    def practiceDrive(self):
+        # start driving:
+        self.setBehavior("Arm", "drive", False)
+
+        # drive until goal reached, then ask to continue:
+        while not rospy.is_shutdown():
+            if (not self.arrived) or (self.goal_rot is None):
+                time.sleep(1)
+                continue
+
+            rospy.loginfo("Arrived ")
+            theta = tf.transformations.euler_from_quaternion(self.goal_rot, 'szyx')[0]
+            # Do visual servo
+            if self.adjustRobotYaw(theta):
+                self.goal_rot = None
+                self.arrived = False
+                # Stop
+                rospy.loginfo("Stop at good angle")
+                cmd = Twist()
+                self.cmd_vel_pub.publish(cmd)
+                self.cmd_vel_pub.publish(cmd)
+                self.cmd_vel_pub.publish(cmd)
 
     def navigateToRamp(self):
         ''' Navigates to the ramp standoff point to begin ramp aquire controller.  This function is for testing, later call will be made by high level. '''
@@ -458,7 +484,7 @@ class BlockController(object):
 
         # Gain of the controller
         # knob_distance_over_angle = 13.0  # from beginning of august
-        knob_distance_over_angle = 20.0  
+        knob_distance_over_angle = 20.0
         #knob_w_over_v = 20.0 # from beginning of august
         knob_w_over_v = 25.0
         K_distance = knob_distance_over_angle/(knob_distance_over_angle + 1.0)
@@ -512,13 +538,13 @@ class BlockController(object):
         if y < target_rot - tol:
             # Turn left
             rospy.logdebug("Turning left")
-            data.angular.z = 0.35
+            data.angular.z = 0.5
             self.cmd_vel_pub.publish(data)
             return False
         elif y > target_rot + tol:
             # Turn right
             rospy.logdebug("Turning right")
-            data.angular.z = -0.35
+            data.angular.z = -0.5
             self.cmd_vel_pub.publish(data)
             return False
         return True

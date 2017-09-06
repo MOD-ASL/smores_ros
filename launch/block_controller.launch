@@ -9,7 +9,7 @@
 
     <node name="SMORES_Block_Controller" pkg="smores_ros" type="block_controller_node.py" output="screen">
         <param name="set_behavior_service_name" value="set_behavior" />
-        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
+        <param name="drive_command_topic_name" value="navigation_velocity_smoother/raw_cmd_vel" />
         <param name="test_apriltags" value="$(arg test_apriltags)" />
     </node>
 </launch>

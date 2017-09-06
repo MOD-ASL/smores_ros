@@ -11,7 +11,7 @@ import numpy as np
 from actionlib_msgs.msg import GoalStatus
 from actionlib.action_client import get_name_of_constant
 from smores_ros import action_client
-from std_msgs.msg import Int32, String
+from std_msgs.msg import Int32, String, Bool
 from geometry_msgs.msg import Vector3, Pose, Twist, TransformStamped, PoseStamped
 from smores_ros.srv import nbv_request, target_req, set_behavior, region_req, character_req
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -43,15 +43,24 @@ class MissionPlanner(object):
         self.second_drawer_pose = None
         self.viewpoint_pose = None
         self.tf_pub = None
+        self.set_behavior_service = None
 
         self._ramp_place_pose = None
         self._ramp_place_rot = None
         self._ramp_pose = None
         self.nav_finished = False
         self.robot_yaw_adjust_finished = False
+        self.region_robot = None
+        self.region_second_drawer = None
 
         self._initialize()
         self.main()
+
+    def onShutDown(self):
+        rospy.loginfo("\n####################\n## Shutting down. ##\n####################")
+        self.setBehavior("Arm", "stop", True)
+        self._stopDriving()
+
 
     def _getROSParam(self):
         for para_name in self.param_name_list:
@@ -78,29 +87,45 @@ class MissionPlanner(object):
         self.middle_tag = "tag_6"
         self.last_tag = "tag_7"
 
+
         self._getROSParam()
 
         # Setup client, publishers and subscribers
         self.nav_action_client = action_client.SimpleActionClient(
                 self.param_dict["navigation_action_name"], MoveBaseAction)
+        self.set_behavior_service = rospy.ServiceProxy(
+                    self.param_dict["set_behavior_service_name"], set_behavior)
+        self.cmd_vel_pub = rospy.Publisher(
+                self.param_dict["drive_command_topic_name"], Twist, queue_size=1)
 
         rospy.Subscriber("/rtabmap/odom", Odometry, self.pose_cb, queue_size=1)
         rospy.Subscriber("/move_base/status", GoalStatusArray, self.navigation_goal_status_cb, queue_size=1)
         rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.tag_cb, queue_size=1)
 
+        rospy.on_shutdown(self.onShutDown)
         ### This is only for testing
         self.robot_pose = Pose()
         self.first_drawer_pose = Pose()
         self.first_drawer_pose.position.x = 1
         self.second_drawer_pose = Pose()
-        self.second_drawer_pose.position.x = 1
-        self.robot_state = RobotState.GoToRamp
+        self.second_drawer_pose.position.x = 0.872
+        self.second_drawer_pose.position.y = -0.138
+        self.viewpoint_pose = Pose()
+        self.viewpoint_pose.position.x = 0.0
+        self.viewpoint_pose.position.y = 0.8
+        self.viewpoint_pose.position.z = 0.0
+        quat = tf.transformations.quaternion_from_euler(0.0, 0.0, -45.0/180*np.pi)
+        self.viewpoint_pose.orientation.x = quat[0]
+        self.viewpoint_pose.orientation.y = quat[1]
+        self.viewpoint_pose.orientation.z = quat[2]
+        self.viewpoint_pose.orientation.w = quat[3]
+
+        self.robot_state = RobotState.GoToViewPoint
+
 
     def setBehavior(self, configuration_name, behavior_name, is_action=False):
         try:
-            set_behavior_service = rospy.ServiceProxy(
-                    self.param_dict["set_behavior_service_name"], set_behavior)
-            resp = set_behavior_service(configuration_name, behavior_name, is_action)
+            resp = self.set_behavior_service(configuration_name, behavior_name, is_action)
             return resp.status
         except rospy.ServiceException, e:
             rospy.logerr("Service call failed: {}".format(e))
@@ -119,10 +144,14 @@ class MissionPlanner(object):
         self.nav_action_client.send_goal(goal)
 
     def tag_cb(self, data):
+        # If we saw ramp before, don't check again.
+        # TODO maybe do this once a while
+        if self._ramp_pose is not None:
+            return
         for tag in data.detections:
-            if tag.id == 0:
+            if tag.id == 0 and self.tf.frameExists("ramp_nav_goal"):
                 # Now we need to find the tag pose in world frame
-                pose, rot = self.getPositionFromTF("ramp_nav_goal", "map")
+                pose, rot = self.getPositionFromTF("map", "ramp_nav_goal")
                 if pose is not None:
                     self._ramp_pose = self.constructPose(pose, rot)
 
@@ -198,7 +227,8 @@ class MissionPlanner(object):
         # Robot turning speed
         w = -K_distance * d - K_angle * theta
 
-        return v, w * knob_w_over_v
+        # We need to divide the return value by 0.7 to match with the scale in behavior_planner
+        return v/0.7, w * knob_w_over_v/0.7
 
     def aquireRamp(self):
         ''' This part is for block grabbing '''
@@ -207,13 +237,14 @@ class MissionPlanner(object):
         while not rospy.is_shutdown():
            self.rate.sleep()
            try:
-               (move_pose, move_rot) = self.getPositionFromTF(self.first_tag, "tag_0_goal")
+               (move_pose, move_rot) = self.getPositionFromTF("tag_0_goal", self.first_tag)
            except TypeError as e:
                rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
                continue
-
+           if move_pose is None:
+               continue
            theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[0]
-           rospy.loginfo("Pose is x: {:.4f}, y: {:.4f}, theta: {:.4f}".format(move_pose[0], move_pose[1], theta*180/pi))
+           rospy.loginfo("Pose is x: {:.4f}, y: {:.4f}, theta: {:.4f}".format(move_pose[0], move_pose[1], theta*180/np.pi))
            v, w = self.lineFollowController(move_pose[1], theta)
            rospy.loginfo("Velocity is v: {:.4f}, w: {:.4f}".format(v, w))
 
@@ -227,7 +258,7 @@ class MissionPlanner(object):
                rospy.loginfo("Visual servoing")
                # visual servo to pick up block
                threshold_degrees = 0.5
-               if theta > (threshold_degrees*pi/180) or theta < -(threshold_degrees*pi/180):
+               if theta > (threshold_degrees*np.pi/180) or theta < -(threshold_degrees*np.pi/180):
                    self.doVisualServo(move_pose[0], theta)
                else:
                    rospy.logerr("stopping.")
@@ -309,11 +340,13 @@ class MissionPlanner(object):
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getPositionFromTF(move_tag, target_tag)
+                (move_pose, move_rot) = self.getPositionFromTF(target_tag,move_tag)
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(self.first_tag, e))
                 continue
 
+            if move_rot is None:
+                continue
             theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[2]
             if do_abs:
                 theta = abs(theta)
@@ -336,7 +369,7 @@ class MissionPlanner(object):
         # Set configuration
         self.setBehavior("Arm", "", True)
         # Adjust ramp tilt
-        if self.adjustHeadTilt("Arm","tag_1", "usb_cam", 2.45, True, operator.gt):
+        if self.adjustHeadTilt("Arm","tag_1","usb_cam", 2.5, True, operator.gt):
             pass
         else:
             rospy.logerr("Cannot adjust ramp tilt")
@@ -369,11 +402,13 @@ class MissionPlanner(object):
         while not rospy.is_shutdown():
             self.rate.sleep()
             try:
-                (move_pose, move_rot) = self.getPositionFromTF(self.middle_tag, "tag_1")
+                (move_pose, move_rot) = self.getPositionFromTF("tag_1", self.middle_tag)
             except TypeError as e:
                 rospy.logerr("Cannot find position for {!r}: {}".format(self.middle_tag, e))
                 continue
 
+            if move_rot is None:
+                continue
             theta = tf.transformations.euler_from_quaternion(move_rot, 'szyx')[1]
             rospy.loginfo("Pose is {:.4f} and {:.4f} and {:.4f}".format(move_pose[0], move_pose[1], theta))
 
@@ -410,16 +445,16 @@ class MissionPlanner(object):
             rospy.logerr("Service call failed: {}".format(e))
             return None
 
-    def getPositionFromTF(self, child, parent, delay = False):
+    def getPositionFromTF(self, source, target, delay=False):
 
-        rospy.logdebug("Getting position for {!r} wrt to {!r}".format(child, parent))
-        if not self.tf.frameExists(child):
-            rospy.logwarn("Cannot find frame {!r}".format(child))
+        rospy.logdebug("Getting position for {!r} wrt to {!r}".format(target, source))
+        if not self.tf.frameExists(target):
+            rospy.logwarn("Cannot find frame {!r}".format(target))
             return None, None
 
         while not rospy.is_shutdown():
             try:
-                pose, rot = self.tf.lookupTransform(child, parent, rospy.Time(0))
+                pose, rot = self.tf.lookupTransform(source, target, rospy.Time(0))
                 if delay:
                     self._ramp_place_pose = pose
                     self._ramp_place_rot = rot
@@ -440,27 +475,27 @@ class MissionPlanner(object):
         return target_pose
 
     def doVisualServo(self, x, y, target_rot = 0.0, tol = 0.01):
+        # We choose 0.5 speed to match with the scale in behavior_planner
         data = Twist()
         if y < target_rot - tol:
             # Turn left
             rospy.logdebug("Turning left")
-            data.angular.z = 0.35
+            data.angular.z = 0.5
             self.cmd_vel_pub.publish(data)
             return False
         elif y > target_rot + tol:
             # Turn right
             rospy.logdebug("Turning right")
-            data.angular.z = -0.35
+            data.angular.z = -0.5
             self.cmd_vel_pub.publish(data)
             return False
         return True
 
     def _stopDriving(self):
         data = Twist()
-        self.cmd_vel_pub.publish(data)
-        self.cmd_vel_pub.publish(data)
-        self.cmd_vel_pub.publish(data)
-        self.cmd_vel_pub.publish(data)
+        for i in xrange(10):
+            time.sleep(0.05)
+            self.cmd_vel_pub.publish(data)
         self.setBehavior("", "", False)
 
     def main(self):
@@ -508,14 +543,21 @@ class MissionPlanner(object):
                 # Now let's send the goal and drive
                 self.nav_finished = False
                 self.robot_yaw_adjust_finished = False
-                self.sendNavGoalRequest(self.viewpoint_pose)
+                for i in xrange(5):
+                    self.sendNavGoalRequest(self.viewpoint_pose)
+                    rospy.sleep(0.5)
+
                 self.setBehavior("Arm", "drive", False)
 
                 # Check if the robot finished navigation
                 if self.returnAfterNavFinished():
                     rospy.loginfo("Finished navigation.")
                     rospy.loginfo("Adjust robot Yaw")
-                    theta = tf.transformations.euler_from_quaternion(self.viewpoint_pose.orientation, 'szyx')[0]
+                    qot = [self.viewpoint_pose.orientation.x,
+                           self.viewpoint_pose.orientation.y,
+                           self.viewpoint_pose.orientation.z,
+                           self.viewpoint_pose.orientation.w]
+                    theta = tf.transformations.euler_from_quaternion(qot, 'szyx')[0]
                     # Do visual servo
                     if self.adjustRobotYaw(theta):
                         rospy.loginfo("Finished adjust robot Yaw.")
@@ -523,7 +565,27 @@ class MissionPlanner(object):
                         self.setBehavior("Arm", "stop", True)
 
                         # Now do the character action
+                        rospy.loginfo("Doing characterization ... ")
                         rospy.sleep(10)
+                        ## Now trigger characterization
+                        #rospy.loginfo("Send character request.")
+                        #character = self.getCharacter()
+
+                        ## Find the region of current robot position and goal
+                        #rospy.loginfo("Send region request for robot at {0.x} and {0.y}".format(self.robot_pose.position))
+                        #result = self.getRegionFromPose(self.robot_pose)
+                        #if result is None:
+                        #    rospy.logwarn("Cannot get region from pose. Skip")
+                        #    continue
+                        #self.region_robot = result.region.data
+                        #rospy.loginfo("The robot is in {}.".format(self.region_robot))
+                        #rospy.loginfo("Send region request for second drawer at {0.x} and {0.y}".format(self.second_drawer_pose.position))
+                        #result = self.getRegionFromPose(self.second_drawer_pose)
+                        #if result is None:
+                        #    rospy.logwarn("Cannot get region from pose. Skip")
+                        #    continue
+                        #self.region_second_drawer = result.region.data
+                        #rospy.loginfo("The second drawer is in {}.".format(self.region_second_drawer))
 
                 self.setRobotState(RobotState.GoToRamp)
 
@@ -540,6 +602,19 @@ class MissionPlanner(object):
                 # Now let's send the goal and drive
                 self.nav_finished = False
                 self.robot_yaw_adjust_finished = False
+                rng_rot = [self._ramp_pose.orientation.x,
+                           self._ramp_pose.orientation.y,
+                           self._ramp_pose.orientation.z,
+                           self._ramp_pose.orientation.w]
+                theta = tf.transformations.euler_from_quaternion(rng_rot, 'szyx')[0]
+                z_quat = tf.transformations.quaternion_from_euler(theta,0,0, 'szyx')
+
+                # pack into a pose object:
+                self._ramp_pose.orientation.x = z_quat[0]
+                self._ramp_pose.orientation.y = z_quat[1]
+                self._ramp_pose.orientation.z = z_quat[2]
+                self._ramp_pose.orientation.w = z_quat[3]
+                rospy.loginfo("Send nav goal to ramp. {}".format(self._ramp_pose))
                 self.sendNavGoalRequest(self._ramp_pose)
                 self.setBehavior("Arm", "drive", False)
 
@@ -547,12 +622,24 @@ class MissionPlanner(object):
                 if self.returnAfterNavFinished():
                     rospy.loginfo("Finished navigation.")
                     rospy.loginfo("Adjust robot Yaw")
-                    theta = tf.transformations.euler_from_quaternion(self._ramp_pose.orientation, 'szyx')[0]
+                    rot = (self._ramp_pose.orientation.x,
+                           self._ramp_pose.orientation.y,
+                           self._ramp_pose.orientation.z,
+                           self._ramp_pose.orientation.w)
+                    theta = tf.transformations.euler_from_quaternion(rot, 'szyx')[0]
                     # Do visual servo
                     if self.adjustRobotYaw(theta):
                         rospy.loginfo("Finished adjust robot Yaw.")
                         self._stopDriving()
-                        self.setBehavior("Arm", "stop", True)
+
+                        # Switch camera view
+                        rospy.loginfo("Switching camera source...")
+                        pub = rospy.Publisher("april_source", Bool, queue_size = 1)
+                        for i in xrange(10):
+                            cmd = Bool()
+                            cmd.data = False
+                            pub.publish(cmd)
+                            rospy.sleep(0.5)
 
                         # Now do the pick up action
                         self.aquireRamp()
@@ -561,26 +648,36 @@ class MissionPlanner(object):
             if self.robot_state == RobotState.GoToPlacePoint:
                 # The robot is driving to the point to place the ramp
 
-                # We need to figure out the placement point first
-                # Find the region of current robot position and goal
-                rospy.loginfo("Send region request for robot.")
-                region_robot = self.getRegionFromPose(self.robot_pose).region.data
-                rospy.loginfo("The robot is in {}.".format(region_robot))
-                rospy.loginfo("Send region request for second drawer.")
-                region_second_drawer = self.getRegionFromPose(self.second_drawer_pose).region.data
-                rospy.loginfo("The second drawer is in {}.".format(region_second_drawer))
+                # Check if the characterization is done before
+                if self.region_robot is None:
+                    # Now trigger characterization
+                    rospy.loginfo("Send character request.")
+                    character = self.getCharacter()
+
+                    # Find the region of current robot position and goal
+                    rospy.loginfo("Send region request for robot at {0.x} and {0.y}".format(self.robot_pose.position))
+                    result = self.getRegionFromPose(self.robot_pose)
+                    if result is None:
+                        rospy.logwarn("Cannot get region from pose. Skip")
+                        continue
+                    self.region_robot = result.region.data
+                    rospy.loginfo("The robot is in {}.".format(self.region_robot))
+                    rospy.loginfo("Send region request for second drawer at {0.x} and {0.y}".format(self.second_drawer_pose.position))
+                    result = self.getRegionFromPose(self.second_drawer_pose)
+                    if result is None:
+                        rospy.logwarn("Cannot get region from pose. Skip")
+                        continue
+                    self.region_second_drawer = result.region.data
+                    rospy.loginfo("The second drawer is in {}.".format(self.region_second_drawer))
 
                 # Check if the robot is in the same region as the goal
-                if region_robot == region_second_drawer:
+                if self.region_robot == self.region_second_drawer:
                     # Move to the goal
                     rospy.loginfo("The robot is in the same region and the second drawer.")
                     # This should not really happen
                     rospy.logerr("Do not know what to do yet.")
                     return
 
-                # Now get all characterization infomation
-                rospy.loginfo("Send character request.")
-                character = self.getCharacter()
 
                 candidates = character.poses.poses
                 rospy.loginfo("There are {} ramp candidates.".format(len(candidates)))
@@ -592,8 +689,8 @@ class MissionPlanner(object):
                     r2 = character.region2.data[i]
                     rospy.loginfo("Checking pose {0.x} {0.y} {0.z} that connects {1} {2}.".format(pose.position, r1, r2))
 
-                    if (r1 == region_robot and r2 == region_second_drawer) \
-                        or (r2 == region_robot and r1 == region_second_drawer):
+                    if (r1 == self.region_robot and r2 == self.region_second_drawer) \
+                        or (r2 == self.region_robot and r1 == self.region_second_drawer):
                             rospy.loginfo("Match!")
                             matched_id = i
                             break
@@ -612,14 +709,14 @@ class MissionPlanner(object):
 
                 # Get the the ramp placement pose
                 # We need to use a timer to get the transform and publish the transform during this time
-                t = Timer(2, self.getPositionFromTF, ["ramp_place_pose", "map", True])
+                t = Timer(2, self.getPositionFromTF, ["map", "ramp_place_pose", True])
                 t.start()
 
                 # First let's publish the candidate pose
                 for i in xrange(10):
                     pose = (candidates[matched_id].position.x,
                             candidates[matched_id].position.y,
-                            candidates[matched_id].position.z)
+                            0.0)
                     rot = (candidates[matched_id].orientation.x,
                            candidates[matched_id].orientation.y,
                            candidates[matched_id].orientation.z,
@@ -627,12 +724,13 @@ class MissionPlanner(object):
                     self.tf_pub.sendTransform(pose, rot, rospy.Time.now(), "ramp_pose", "map")
                     # Now translate along the negative x direction
                     # TODO check this
-                    pose = (-0.1, 0.0, 0.0)
-                    self.tf_pub.sendTransform(pose, rot, rospy.Time.now(), "ramp_place_pose", "ramp_pose")
+                    pose = (-0.4, 0.0, 0.0)
+                    self.tf_pub.sendTransform(pose, (0.0,0.0,0.0,1.0), rospy.Time.now(), "ramp_place_pose", "ramp_pose")
                     rospy.sleep(0.5)
 
                 # Now let's send the goal and drive
                 target_pose = self.constructPose(self._ramp_place_pose, self._ramp_place_rot)
+                rospy.loginfo("The ramp placement pose is {0.x},{0.y},{0.z}.".format(target_pose.position))
                 self.nav_finished = False
                 self.robot_yaw_adjust_finished = False
                 self.sendNavGoalRequest(target_pose)
@@ -642,15 +740,17 @@ class MissionPlanner(object):
                 if self.returnAfterNavFinished():
                     rospy.loginfo("Finished navigation.")
                     rospy.loginfo("Adjust robot Yaw")
-                    theta = tf.transformations.euler_from_quaternion(target_pose.orientation, 'szyx')[0]
+                    theta = tf.transformations.euler_from_quaternion(self._ramp_place_rot, 'szyx')[0]
                     # Do visual servo
                     if self.adjustRobotYaw(theta):
                         rospy.loginfo("Finished adjust robot Yaw.")
                         self._stopDriving()
-                        self.setBehavior("Arm", "stop", True)
 
                         # Now do the rest
-                        self.PlaceAndClimb()
+                        rospy.loginfo("Place the ramp and climb.")
+                        cmd = raw_input("Continue:? ")
+                        if cmd == "y":
+                            self.PlaceAndClimb()
 
 
 

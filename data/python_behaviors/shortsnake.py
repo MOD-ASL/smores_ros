@@ -22,7 +22,7 @@ class ShortSnake:
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
                                "ss1":11,
-                               "ss2":2,
+                               "ss2":13,
                                "ss3":21,
                               } # module alias: module ID
         self._cmd_repeat_time = 3

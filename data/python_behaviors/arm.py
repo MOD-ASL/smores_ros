@@ -24,13 +24,21 @@ class Arm:
         self.module_dof_offset = {
                                  } # module ID_dof_name: offset angle from input cmd
         self.module_mapping = {
-                               "a1":11,
+                               "a1":10,
                                "a2":2,
-                               "a3":21,
+                               "a3":8,
                                "a4":18,
-                               "aR":7,
-                               "aL":6,
+                               "aR":4,
+                               "aL":16,
                               } # module alias: module ID
+        #self.module_mapping = {
+        #                       "a1":11,
+        #                       "a2":13,
+        #                       "a3":21,
+        #                       "a4":18,
+        #                       "aR":7,
+        #                       "aL":6,
+        #                      } # module alias: module ID
         self._cmd_repeat_time = 3
 
     def _get_angle(self, cmd_angle, module_ID, dof_name):
@@ -126,6 +134,41 @@ class Arm:
 
         return time_period
 
+    def openDrawer(self, c, para_val_dict = {}):
+        """
+        Drive to open the drawer
+        """
+
+        time_period = 2
+
+        # Prepare the first module
+        module_ID = self.module_mapping["a1"]
+        for i in xrange(self._cmd_repeat_time):
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+        time.sleep(time_period)
+
+        # Drive forward for a short time
+        self.forward(c, para_val_dict = {"vel":0.1, "stand_angle":50})
+        time.sleep(4)
+
+        # Start to tilt up
+        module_ID = self.module_mapping["a1"]
+        c.mods[module_ID].move.send_torque("tilt", 15)
+        # Fire up the magnets
+        for i in xrange(4):
+            time.sleep(1.0)
+            for i in xrange(self._cmd_repeat_time):
+                module_ID = self.module_mapping["a1"]
+                c.mods[module_ID].mag.control("top", "on")
+        self.stop(c)
+
+        # Drive backward
+        self.forward(c, para_val_dict = {"vel":-0.1, "stand_angle":50})
+        time.sleep(10)
+        self.stop(c)
+
+        return time_period
 
     def flat(self, c, para_val_dict = {}):
         """
@@ -196,7 +239,7 @@ class Arm:
     def driveWithVW(self, c, v, w, arm_angle=40, stand_angle=20, tilt=False):
         offset = 0.0
         #
-        minimum_w = 0.35
+        minimum_w = 0.36
         wiggle_amplitude = 0.02
         if w == 0.0:
             pass
@@ -295,7 +338,7 @@ class Arm:
         """
         Drive the arm forward
         """
-        self.driveWithVW(c, 0.1, 0.0)
+        self.driveWithVW(c, para_val_dict["vel"], 0.0)
         return 0.0
 
     def drive(self, c, para_val_dict = {"left_V":30, "right_V":-30, "arm_angle":40, "stand_angle":20, "tilt":False}):

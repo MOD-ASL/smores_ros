@@ -1,8 +1,8 @@
 <launch>
     <node name="SMORES_Mission_Planner" pkg="smores_ros" type="mission_planner_node.py" output="screen">
         <param name="nbv_service_name" value="nbv_relay" />
-        <param name="region_req_service_name" value="region_req" />
-        <param name="character_req_service_name" value="character_req" />
+        <param name="region_req_service_name" value="regionize" />
+        <param name="character_req_service_name" value="characterize" />
         <param name="dock_point_service_name" value="get_target" />
         <param name="pink_obj_topic_name" value="blobPt" />
         <param name="blue_obj_topic_name" value="bluePt" />
@@ -13,13 +13,11 @@
         <param name="reconf_signal_topic_name_2" value="Reconfiguration_Controller_2/reconf_signal" />
         <param name="reconf_status_topic_name_2" value="Reconfiguration_Controller_2/reconf_status" />
         <param name="set_behavior_service_name" value="set_behavior" />
-        <param name="drive_command_topic_name" value="/mobile_base/commands/velocity" />
+        <param name="drive_command_topic_name" value="/navigation_velocity_smoother/raw_cmd_vel" />
     </node>
     <node name="NBV_Relay_Node" pkg="smores_ros" type="nbv_relay_node.py" output="screen">
         <param name="nbv_request_topic" value="/nbv_iter" />
         <param name="nbv_result_topic" value="/nbv_pose" />
         <param name="timeout_period" value="600" />
     </node>
-    <node pkg="tf" type="static_transform_publisher" name="tag_0_goal" args="-0.1 0.0 0.0 0.0 0.785398 0.0 tag_0 tag_0_goal 1000"/>
-    <node pkg="tf" type="static_transform_publisher" name="ramp_nav_goal" args="-0.3 0.0 0.0 0.0 0.0 0.0 tag_0_goal ramp_nav_goal 1000"/>
 </launch>
