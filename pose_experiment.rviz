@@ -4,6 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /TF1
         - /TF1/Frames1
         - /TF1/Tree1
         - /Global Map1/Costmap1
@@ -99,8 +100,6 @@ Visualization Manager:
           Value: false
         cliff_sensor_right_link:
           Value: false
-        greenObj:
-          Value: false
         gyro_link:
           Value: false
         map:
@@ -108,6 +107,8 @@ Visualization Manager:
         mount_asus_xtion_pro_link:
           Value: false
         odom:
+          Value: false
+        pinkObj:
           Value: false
         plate_bottom_link:
           Value: false
@@ -148,16 +149,22 @@ Visualization Manager:
         pole_top_3_link:
           Value: false
         ramp_nav_goal:
-          Value: false
+          Value: true
         tag_0:
           Value: true
         tag_0_goal:
           Value: false
+        tag_0_goal_calc:
+          Value: true
         tag_1:
           Value: false
         tag_2:
           Value: false
         tag_5:
+          Value: true
+        tag_6:
+          Value: false
+        tag_7:
           Value: false
         usb_cam:
           Value: false
@@ -167,87 +174,90 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        base_footprint:
-          {}
-        base_link:
-          camera_rgb_frame:
-            camera_depth_frame:
-              camera_depth_optical_frame:
-                {}
-            camera_rgb_optical_frame:
-              greenObj:
-                {}
-          caster_back_link:
-            {}
-          caster_front_link:
-            {}
-          cliff_sensor_front_link:
-            {}
-          cliff_sensor_left_link:
-            {}
-          cliff_sensor_right_link:
-            {}
-          gyro_link:
-            {}
-          mount_asus_xtion_pro_link:
-            {}
-          plate_bottom_link:
-            {}
-          plate_middle_link:
-            {}
-          plate_top_link:
-            {}
-          pole_bottom_0_link:
-            {}
-          pole_bottom_1_link:
-            {}
-          pole_bottom_2_link:
-            {}
-          pole_bottom_3_link:
-            {}
-          pole_bottom_4_link:
-            {}
-          pole_bottom_5_link:
-            {}
-          pole_kinect_0_link:
-            {}
-          pole_kinect_1_link:
-            {}
-          pole_middle_0_link:
-            {}
-          pole_middle_1_link:
-            {}
-          pole_middle_2_link:
-            {}
-          pole_middle_3_link:
-            {}
-          pole_top_0_link:
-            {}
-          pole_top_1_link:
-            {}
-          pole_top_2_link:
-            {}
-          pole_top_3_link:
-            {}
-          usb_cam:
-            april_cam:
-              {}
-            tag_0:
-              tag_0_goal:
-                ramp_nav_goal:
-                  {}
-            tag_1:
-              {}
-            tag_2:
-              {}
-            tag_5:
-              {}
-        camera_link:
-          {}
         map:
-          {}
-        odom:
-          {}
+          odom:
+            base_footprint:
+              base_link:
+                camera_rgb_frame:
+                  camera_depth_frame:
+                    camera_depth_optical_frame:
+                      {}
+                  camera_link:
+                    april_cam:
+                      {}
+                  camera_rgb_optical_frame:
+                    pinkObj:
+                      {}
+                    tag_0:
+                      tag_0_goal:
+                        {}
+                    tag_2:
+                      {}
+                caster_back_link:
+                  {}
+                caster_front_link:
+                  {}
+                cliff_sensor_front_link:
+                  {}
+                cliff_sensor_left_link:
+                  {}
+                cliff_sensor_right_link:
+                  {}
+                gyro_link:
+                  {}
+                mount_asus_xtion_pro_link:
+                  {}
+                plate_bottom_link:
+                  {}
+                plate_middle_link:
+                  {}
+                plate_top_link:
+                  {}
+                pole_bottom_0_link:
+                  {}
+                pole_bottom_1_link:
+                  {}
+                pole_bottom_2_link:
+                  {}
+                pole_bottom_3_link:
+                  {}
+                pole_bottom_4_link:
+                  {}
+                pole_bottom_5_link:
+                  {}
+                pole_kinect_0_link:
+                  {}
+                pole_kinect_1_link:
+                  {}
+                pole_middle_0_link:
+                  {}
+                pole_middle_1_link:
+                  {}
+                pole_middle_2_link:
+                  {}
+                pole_middle_3_link:
+                  {}
+                pole_top_0_link:
+                  {}
+                pole_top_1_link:
+                  {}
+                pole_top_2_link:
+                  {}
+                pole_top_3_link:
+                  {}
+                usb_cam:
+                  tag_1:
+                    {}
+                  tag_5:
+                    {}
+                  tag_6:
+                    {}
+                  tag_7:
+                    {}
+          ramp_nav_goal:
+            {}
+          tag_0_goal_calc:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -631,22 +641,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.05724
+      Distance: 1.97688
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.151193
-        Y: 0.203919
-        Z: 0.218395
+        X: 0.215282
+        Y: 0.0885533
+        Z: 0.102886
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.484801
+      Pitch: 0.189801
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.49621
+      Yaw: 3.8162
     Saved: ~
 Window Geometry:
   Displays:

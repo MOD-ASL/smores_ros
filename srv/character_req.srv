@@ -1,5 +1,7 @@
 int32 request
 ---
-geometry_msgs/PoseArray poses
+std_msgs/Int32MultiArray character
+geometry_msgs/PoseArray pose1
+geometry_msgs/PoseArray pose2
 std_msgs/Int32MultiArray region1
 std_msgs/Int32MultiArray region2

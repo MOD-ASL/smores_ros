@@ -16,7 +16,7 @@ class dd_joy:
 
         rospy.init_node('joy_to_command', anonymous = True)
         rospy.Subscriber('/joy', Joy, self.callback)
-        self.pub = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size = 1)
+        self.pub = rospy.Publisher("/navigation_velocity_smoother/raw_cmd_vel", Twist, queue_size = 1)
 
     def callback(self, data):
         linear = data.axes[self.lin_pos] * 0.2

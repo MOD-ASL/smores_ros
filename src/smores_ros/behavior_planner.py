@@ -130,24 +130,30 @@ class BehaviorPlanner(object):
                 elif request.behavior_name == "climbRamp":
                     time.sleep(b.climbRamp(self.c))
                     time.sleep(b.stop(self.c))
+                elif request.behavior_name == "spinTower":
+                    time.sleep(b.spinTower(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "explode":
+                    time.sleep(b.explode(self.c))
+                    time.sleep(b.stop(self.c))
                 elif request.behavior_name == "bend":
                     time.sleep(b.bend(self.c))
                     # No stop here
                 elif request.behavior_name == "spinCWF":
                     # No sleep here
-                    b.spin(self.c, {"direction":"cw", "speed":20})
+                    b.spin(self.c, {"direction":"cw", "speed":50})
                     # No stop here
                 elif request.behavior_name == "spinCCWF":
                     # No sleep here
-                    b.spin(self.c, {"direction":"ccw", "speed":20})
+                    b.spin(self.c, {"direction":"ccw", "speed":50})
                     # No stop here
                 elif request.behavior_name == "spinCWS":
                     # No sleep here
-                    b.spin(self.c, {"direction":"cw", "speed":15})
+                    b.spin(self.c, {"direction":"cw", "speed":30})
                     # No stop here
                 elif request.behavior_name == "spinCCWS":
                     # No sleep here
-                    b.spin(self.c, {"direction":"ccw", "speed":15})
+                    b.spin(self.c, {"direction":"ccw", "speed":30})
                     # No stop here
                 elif request.behavior_name == "adjustHeadTiltUP":
                     # No sleep here

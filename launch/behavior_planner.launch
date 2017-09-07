@@ -4,6 +4,4 @@
         <param name="data_file_directory" value="/home/jim/Projects/smores_ws/src/smores_ros/data/python_behaviors" />
         <param name="drive_command_topic_name" value="/navigation_velocity_smoother/raw_cmd_vel" />
     </node>
-    <node pkg="tf" type="static_transform_publisher" name="tag_0_goal" args="-0.1 0.0 0.0 0.0 0.785398 0.0 tag_0 tag_0_goal 1000"/>
-    <node pkg="tf" type="static_transform_publisher" name="ramp_nav_goal" args="-0.3 0.0 0.0 0.0 0.0 0.0 tag_0_goal ramp_nav_goal 1000"/>
 </launch>

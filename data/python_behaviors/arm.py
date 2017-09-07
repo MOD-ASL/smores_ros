@@ -36,8 +36,8 @@ class Arm:
         #                       "a2":13,
         #                       "a3":21,
         #                       "a4":18,
-        #                       "aR":7,
-        #                       "aL":6,
+        #                       "aR":14,
+        #                       "aL":15,
         #                      } # module alias: module ID
         self._cmd_repeat_time = 3
 
@@ -139,33 +139,51 @@ class Arm:
         Drive to open the drawer
         """
 
-        time_period = 2
+        time_period = 4
 
         # Prepare the first module
         module_ID = self.module_mapping["a1"]
         for i in xrange(self._cmd_repeat_time):
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-40, module_ID, "tilt"), time_period)
             time.sleep(0.05)
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(40, module_ID, "tilt"), time_period)
         time.sleep(time_period)
 
         # Drive forward for a short time
-        self.forward(c, para_val_dict = {"vel":0.1, "stand_angle":50})
-        time.sleep(4)
+        self.forward(c, para_val_dict = {"vel":0.25, "stand_angle":50})
+        time.sleep(10)
 
         # Start to tilt up
         module_ID = self.module_mapping["a1"]
         c.mods[module_ID].move.send_torque("tilt", 15)
         # Fire up the magnets
-        for i in xrange(4):
-            time.sleep(1.0)
+        for a in xrange(7):
+            time.sleep(1)
             for i in xrange(self._cmd_repeat_time):
                 module_ID = self.module_mapping["a1"]
                 c.mods[module_ID].mag.control("top", "on")
+            print str(a)
+        self.stop(c)
+        time.sleep(2)
         self.stop(c)
 
         # Drive backward
         self.forward(c, para_val_dict = {"vel":-0.1, "stand_angle":50})
-        time.sleep(10)
+        for a in xrange(30):
+            time.sleep(1)
+            for i in xrange(self._cmd_repeat_time):
+                module_ID = self.module_mapping["a1"]
+                c.mods[module_ID].mag.control("top", "on")
+            print str(a)
+
+        self.forward(c, para_val_dict = {"vel":-0.1, "stand_angle":50})
+        for a in xrange(15):
+            time.sleep(1)
+            for i in xrange(self._cmd_repeat_time):
+                module_ID = self.module_mapping["a1"]
+                c.mods[module_ID].mag.control("top", "off")
+            print str(a)
         self.stop(c)
 
         return time_period
@@ -190,7 +208,7 @@ class Arm:
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
+            #c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["aL"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(0, module_ID, "tilt"), time_period)
@@ -202,6 +220,94 @@ class Arm:
         return time_period
 
 
+    def explode(self, c, para_val_dict = {}):
+
+        time_period = 4
+
+        time.sleep(self.flat(c))
+        time.sleep(4)
+
+        for i in xrange(self._cmd_repeat_time):
+            c.allMagnets("off")
+            time.sleep(0.05)
+
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["a3"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["aL"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["aR"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+
+        time.sleep(time_period)
+
+        for i in xrange(self._cmd_repeat_time):
+            c.allMagnets("off")
+            time.sleep(0.05)
+
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a1"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["a3"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["aL"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+
+            module_ID = self.module_mapping["aR"]
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+            time.sleep(0.05)
+
+        time.sleep(time_period)
+
+
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["a1"]
+            c.mods[module_ID].move.send_torque("left", 60)
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", -30)
+            time.sleep(0.05)
+
+            module_ID = self.module_mapping["a2"]
+            c.mods[module_ID].move.send_torque("left", -30)
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", 60)
+            time.sleep(0.05)
+
+            module_ID = self.module_mapping["a3"]
+            c.mods[module_ID].move.send_torque("left", -60)
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", 30)
+            time.sleep(0.05)
+
+            module_ID = self.module_mapping["aR"]
+            c.mods[module_ID].move.send_torque("left", 60)
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", -30)
+            time.sleep(0.05)
+
+            module_ID = self.module_mapping["aL"]
+            c.mods[module_ID].move.send_torque("left", 60)
+            time.sleep(0.05)
+            c.mods[module_ID].move.send_torque("right", -30)
+            time.sleep(0.05)
+
+        time.sleep(4)
+
+        return time_period
 
     def stand(self, c, para_val_dict = {"stand_angle":20, "arm_angle":40}):
         """
@@ -216,16 +322,16 @@ class Arm:
         c.allMagnets("on")
         for i in xrange(self._cmd_repeat_time):
             module_ID = self.module_mapping["a1"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(-30, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a2"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(30, module_ID, "tilt"), time_period)
+            c.mods[module_ID].move.command_position("tilt",self._get_angle(25, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a3"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-10, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["a4"]
-            c.mods[module_ID].move.command_position("tilt",self._get_angle(20, module_ID, "tilt"), time_period)
+            #c.mods[module_ID].move.command_position("tilt",self._get_angle(20, module_ID, "tilt"), time_period)
 
             module_ID = self.module_mapping["aL"]
             c.mods[module_ID].move.command_position("tilt",self._get_angle(-para_val_dict["arm_angle"], module_ID, "tilt"), time_period)
@@ -334,12 +440,24 @@ class Arm:
 
         return time_period
 
-    def forward(self, c, para_val_dict = {}):
+    def forward(self, c, para_val_dict = {"vel":0.2}):
         """
         Drive the arm forward
         """
         self.driveWithVW(c, para_val_dict["vel"], 0.0)
         return 0.0
+
+    def spinTower(self, c, para_val_dict = {}):
+        time_period = 3
+
+        for i in xrange(self._cmd_repeat_time):
+            module_ID = self.module_mapping["aL"]
+            c.mods[module_ID].move.send_torque("pan", -60)
+
+            module_ID = self.module_mapping["aR"]
+            c.mods[module_ID].move.send_torque("pan", -60)
+
+        return time_period
 
     def drive(self, c, para_val_dict = {"left_V":30, "right_V":-30, "arm_angle":40, "stand_angle":20, "tilt":False}):
         """
