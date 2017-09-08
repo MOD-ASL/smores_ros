@@ -130,6 +130,12 @@ class BehaviorPlanner(object):
                 elif request.behavior_name == "climbRamp":
                     time.sleep(b.climbRamp(self.c))
                     time.sleep(b.stop(self.c))
+                elif request.behavior_name == "release":
+                    time.sleep(b.release(self.c))
+                    time.sleep(b.stop(self.c))
+                elif request.behavior_name == "breakBackThree":
+                    time.sleep(b.breakBackThree(self.c))
+                    time.sleep(b.stop(self.c))
                 elif request.behavior_name == "spinTower":
                     time.sleep(b.spinTower(self.c))
                     time.sleep(b.stop(self.c))
@@ -138,6 +144,9 @@ class BehaviorPlanner(object):
                     time.sleep(b.stop(self.c))
                 elif request.behavior_name == "bend":
                     time.sleep(b.bend(self.c))
+                    # No stop here
+                elif request.behavior_name == "climbBridge":
+                    time.sleep(b.climbBridge(self.c))
                     # No stop here
                 elif request.behavior_name == "spinCWF":
                     # No sleep here
@@ -213,7 +222,7 @@ class BehaviorPlanner(object):
                 b = self.behaivor_dict[self.robot_configuration_name]
                 # We need to scale the vel cmd down for the low level controller
                 b.driveWithVW(self.c, self._current_cmd.linear.x*0.7,
-                            self._current_cmd.angular.z*0.7)
+                            self._current_cmd.angular.z*0.35)
         if self.robot_configuration_name != "":
             b = self.behaivor_dict[self.robot_configuration_name]
             b.stop(self.c)
